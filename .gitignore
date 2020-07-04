@@ -1,0 +1,4 @@
+*.o
+*.BIN
+*.dec
+pspdecrypt
