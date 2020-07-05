@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+#include <string>
 #include <string.h>
 #include "PrxDecrypter.h"
 
@@ -13,8 +14,8 @@ main(int argc, char *argv[]) {
 		printf("Usage: %s <infile>\n", basename(argv[0]));
 		return 1;
 	}
-	char *outFilename = strdup(argv[1]);
-	outFilename = strcat(outFilename, ".dec");
+	string filename = string(argv[1]) + ".dec";
+	const char *outFilename = filename.c_str();
 
 	ifstream inFile (argv[1], ios::in|ios::binary|ios::ate);
 	if (!inFile.is_open()) {
