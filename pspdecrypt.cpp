@@ -7,9 +7,14 @@
 #include "PrxDecrypter.h"
 
 using namespace std;
+static const u32 ELF_SIGNATURE = 0x464C457F;
+static const u32 PSP_SIGNATURE = 0x5053507E;
+static const u32 PBP_SIGNATURE = 0x52415350;
 
 int
 main(int argc, char *argv[]) {
+	int outSize;
+
 	if (argc != 2) {
 		printf("Usage: %s <infile>\n", basename(argv[0]));
 		return 1;
@@ -30,8 +35,29 @@ main(int argc, char *argv[]) {
 	inFile.read(inData, size);
 	inFile.close();
 
-	//int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed = nullptr);
-	int outSize = pspDecryptPRX((const u8 *)inData, (u8 *)outData, size);
+	// detect what type of file we're dealing with
+	u32 file_signature = *(u32 *)inData;
+	switch (file_signature) {
+		case ELF_SIGNATURE:
+			printf("File is already decrypted, exiting.\n");
+			// let's write the file out as if it decrypted successfully to make things easier for folks
+			outSize = size;
+			goto write_file;
+		case 0:
+			printf("Found NULL file signature - is the file empty?\n");
+			return -1;
+		case PSP_SIGNATURE:
+			break;
+		case PBP_SIGNATURE:
+			printf("Found PBP, please run unpack-pbp. Exiting.\n");
+			return -1;
+		default:
+			printf("Found unknown file signature 0x%08X, exiting.", file_signature);
+			return -1;
+	};
+
+	outSize = pspDecryptPRX((const u8 *)inData, (u8 *)outData, size);
+write_file:
 	printf("Decrypt returned %d\n", outSize);
 	if (outSize > 0) {
 		ofstream outFile;
@@ -42,6 +68,7 @@ main(int argc, char *argv[]) {
 		}
 		outFile.write(outData, outSize);
 		outFile.close();
+		return 0;
 	}
-	return 0;
+	return outSize;
 }
