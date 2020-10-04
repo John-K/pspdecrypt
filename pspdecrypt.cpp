@@ -10,6 +10,7 @@ using namespace std;
 static const u32 ELF_SIGNATURE = 0x464C457F;
 static const u32 PSP_SIGNATURE = 0x5053507E;
 static const u32 PBP_SIGNATURE = 0x52415350;
+static const u32 NUL_SIGNATURE = 0x00000000;
 
 int
 main(int argc, char *argv[]) {
@@ -42,11 +43,13 @@ main(int argc, char *argv[]) {
 			printf("File is already decrypted, exiting.\n");
 			// let's write the file out as if it decrypted successfully to make things easier for folks
 			outSize = size;
-			goto write_file;
-		case 0:
+			break;
+		case NUL_SIGNATURE:
 			printf("Found NULL file signature - is the file empty?\n");
 			return -1;
 		case PSP_SIGNATURE:
+			// let's decrypt!
+			outSize = pspDecryptPRX((const u8 *)inData, (u8 *)outData, size);
 			break;
 		case PBP_SIGNATURE:
 			printf("Found PBP, please run unpack-pbp. Exiting.\n");
@@ -56,9 +59,6 @@ main(int argc, char *argv[]) {
 			return -1;
 	};
 
-	outSize = pspDecryptPRX((const u8 *)inData, (u8 *)outData, size);
-write_file:
-	printf("Decrypt returned %d\n", outSize);
 	if (outSize > 0) {
 		ofstream outFile;
 		outFile.open(outFilename, ios::out | ios::app | ios::binary);
