@@ -853,7 +853,7 @@ static int pspDecryptType2(const u8 *inbuf, u8 *outbuf, u32 size)
 	// check if range is non-zero
 	if (std::any_of(inbuf+0xD4, inbuf+0xD4+0x58, [](u8 x) { return x != 0; }))
 	{
-		return -2;
+		//return -2;
 	}
 
 	// expand the seed into a xor buffer
@@ -917,7 +917,7 @@ static int pspDecryptType5(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed
 	// check if range is non-zero
 	if (std::any_of(inbuf+0xD4+1, inbuf+0xD4+0x58, [](u8 x) { return x != 0; }))
 	{
-		return -2;
+		//return -2;
 	}
 
 	// expand the seed into a xor buffer
@@ -981,7 +981,7 @@ static int pspDecryptType6(const u8 *inbuf, u8 *outbuf, u32 size)
 	// check if range is non-zero
 	if (std::any_of(inbuf+0xD4, inbuf+0xD4+0x38, [](u8 x) { return x != 0; }))
 	{
-		return -2;
+		//return -2;
 	}
 
 	// expand the seed into a xor buffer
@@ -1070,7 +1070,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed)
 	if (res >= 0) {
 		//printf("Decryption successful for tag %02X with type 6\n", tag);
 	} else {
-		//printf("Decryption failed for tag %02X\n", tag);
+		printf("Decryption failed for tag %02X\n", tag);
 	}
 	return res;
 }

@@ -17,11 +17,12 @@ extern "C"
 #include "pspdecrypt_lib.h"
 #include "PrxDecrypter.h"
 
+#define DATA_SIZE 3000000
+
 static int OVERHEAD;
 #define SIZE_A      0x110 /* size of uncompressed file entry = 272 bytes */
 
 int iBase, cbChunk, psarVersion;
-int psarPosition;
 int decrypted;
 
 enum
@@ -33,7 +34,7 @@ enum
 
 int mode = MODE_DECRYPT;
 
-int WriteFile(char *file, void *buf, int size)
+int WriteFile(const char *file, void *buf, int size)
 {
     std::fstream myfile;
     myfile = std::fstream(file, std::ios::out | std::ios::binary);
@@ -122,6 +123,108 @@ static int FindTablePath(char *table, int table_size, char *number, char *szOut)
     }
 
     return 0;
+}
+
+static int FindReboot(u8 *input, u8 *output, int size)
+{
+    int i;
+
+    for (i = 0; i < (size - 0x30); i++)
+    {
+        if (memcmp(input+i, "~PSP", 4) == 0)
+        {
+            size = *(u32 *)&input[i+0x2C];
+
+            memcpy(output, input+i, size);
+            return size;
+        }
+    }
+
+    return -1;
+}
+
+static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, const char *reboot, const char *rebootname, u8 *data1, u8 *data2)
+{
+    int s = loadexec_data_size;
+    memcpy(data1, loadexec_data, loadexec_data_size);
+
+    if (s <= 0)
+        return;
+
+    printf("Extracting %s... ", rebootname);
+
+    s = FindReboot(data1, data2, s);
+    if (s <= 0)
+    {
+        printf("Cannot find %s inside loadexec.\n", rebootname);
+        return;
+    }
+
+    s = pspDecryptPRX(data2, data1, s);
+    if (s <= 0)
+    {
+        printf("Cannot decrypt %s.\n", rebootname);
+        return;
+    }
+
+    WriteFile(reboot, data1, s);
+
+    s = pspDecompress(data1, DATA_SIZE, data2, DATA_SIZE);
+    if (s <= 0)
+    {
+        printf("Cannot decompress %s (0x%08X).\n", rebootname, s);
+        return;
+    }
+
+    if (WriteFile(reboot, data2, s) != s)
+    {
+        printf("Cannot write %s.\n", reboot);
+        return;
+    }
+
+    printf("done.\n");
+}
+
+static void CheckExtractReboot(const char *name, int mode, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2) {
+    if (strcmp(name, "flash0:/kd/loadexec.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot.bin", "reboot.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_01g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_01g.bin", "reboot_01g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_02g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_02g.bin", "reboot_02g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_03g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_03g.bin", "reboot_03g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_04g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_04g.bin", "reboot_04g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_05g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_05g.bin", "reboot_05g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_06g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_06g.bin", "reboot_06g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_07g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_07g.bin", "reboot_07g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_08g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_08g.bin", "reboot_08g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_09g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_09g.bin", "reboot_09g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_10g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_10g.bin", "reboot_10g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_11g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_11g.bin", "reboot_11g.bin", data1, data2);
+    }
+    if (strcmp(name, "flash0:/kd/loadexec_12g.prx") == 0) {
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_12g.bin", "reboot_12g.bin", data1, data2);
+    }
 }
 
 // for 1.50 and later, they mangled the plaintext parts of the header
@@ -253,8 +356,6 @@ int pspPSARInit(const u8 *dataPSAR, u8 *dataOut, u8 *dataOut2)
         iBase += OVERHEAD+cbChunk;
     }
 
-    psarPosition = 0;
-
     return 0;
 }
 
@@ -267,7 +368,7 @@ int pspPSARGetNextFile(u8 *dataPSAR, int cbFile, u8 *dataOut, u8 *dataOut2, char
         return 0; // no more files
     }
 
-    cbOut = DecodeBlock(&dataPSAR[iBase-psarPosition], OVERHEAD+SIZE_A, dataOut);
+    cbOut = DecodeBlock(&dataPSAR[iBase], OVERHEAD+SIZE_A, dataOut);
 
     if (cbOut <= 0)
     {
@@ -296,7 +397,7 @@ int pspPSARGetNextFile(u8 *dataPSAR, int cbFile, u8 *dataOut, u8 *dataOut2, char
     u32 cbExpanded = pl[2]; // size of file when expanded
    if (cbExpanded > 0)
     {
-        cbOut = DecodeBlock(&dataPSAR[iBase-psarPosition], cbDataChunk, dataOut);
+        cbOut = DecodeBlock(&dataPSAR[iBase], cbDataChunk, dataOut);
         if (cbOut > 10 && dataOut[0] == 0x78 && dataOut[1] == 0x9C)
         {
             // standard Deflate header
@@ -355,7 +456,7 @@ int pspPSARGetNextFile(u8 *dataPSAR, int cbFile, u8 *dataOut, u8 *dataOut2, char
     return 1; // morefiles
 }
 
-static char *GetVersion(char *buf)
+static const char *GetVersion(char *buf)
 {
     char *p = strrchr(buf, ',');
 
@@ -387,17 +488,13 @@ static int is5Dnum(char *str)
 
 int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 {
-    const u8 *curbuf = dataPSAR;
-    int error = 0;
-    int psar_pos = 0;
     kirk_init();
     if (memcmp(dataPSAR, "PSAR", 4) != 0) {
         printf("Invalid PSAR magic\n");
         return 1;
     }
-    u8 *data1 = new u8[3000000];
-    u8 *data2 = new u8[3000000];
-    //u8 *dataPSAR = new u8[PSAR_BUFFER_SIZE];
+    u8 *data1 = new u8[DATA_SIZE];
+    u8 *data2 = new u8[DATA_SIZE];
     printf("PSAR ok version %d\n", dataPSAR[4]);
     int res = pspPSARInit(dataPSAR, data1, data2);
     if (res < 0)
@@ -405,7 +502,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
         printf("pspPSARInit failed with error 0x%08X!.\n", res);
     }
 
-    char *version = GetVersion((char *)data1+0x10);
+    const char *version = GetVersion((char *)data1+0x10);
     printf("Version %s.\n", version);
     int table_mode;
 
@@ -463,27 +560,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
         int res = pspPSARGetNextFile(dataPSAR, size, data1, data2, name, &cbExpanded, &pos, &signcheck);
 
-        if (res < 0)
-        {
-            if (error) {          
-                printf("PSAR decode error, pos=0x%08X.\n", pos);
-                exit(1);
-            }
-
-            int dpos = pos-psar_pos;
-            psar_pos = pos;
-
-            error = 1;
-            memmove(dataPSAR, dataPSAR+dpos, PSAR_BUFFER_SIZE-dpos);
-            memcpy(dataPSAR+(PSAR_BUFFER_SIZE-dpos), curbuf, dpos);
-            curbuf += dpos;
-
-            //pspPSARSetBufferPosition(psar_pos);
-            psarPosition = psar_pos;
-
-            continue;
-        }
-        else if (res == 0) /* no more files */
+        if (res == 0) /* no more files */
         {
             break;
         }
@@ -559,7 +636,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                     printf("Part 1 Error: cannot find path of %s.\n", name);
                     //printf("Warning: first cannot find path of %s\n", name);
                     //sceKernelDelayThread(2*1000*1000);
-                    error = 0;
                     continue;
                 }
             }
@@ -572,7 +648,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 printf("Part 2 Error: cannot find path of %s.\n", name);
                 //printf("Warning: second cannot find path of %s\n", name);
                 //sceKernelDelayThread(2*1000*1000);
-                error = 0;
                 continue;
                 //printf("Error: cannot find path of %s.\n", name);
             }
@@ -596,7 +671,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
         printf("'%s' ", name);
 
-        char* szFileBase = strrchr(name, '/');
+        const char* szFileBase = strrchr(name, '/');
 
         if (szFileBase != NULL)
             szFileBase++;  // after slash
@@ -680,7 +755,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 {
                     // We don't have yet the keys for table of 3000, they are only in mesg_led03g.prx
                     printf("Cannot decrypt 3g table %08X.\n", _3gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -699,7 +773,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_4gtable_size <= 0)
                 {
                     printf("Cannot decrypt 4g table %08X.\n", _4gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -718,7 +791,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_5gtable_size <= 0)
                 {
                     printf("Cannot decrypt 5g table %08X.\n", _5gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -737,7 +809,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_6gtable_size <= 0)
                 {
                     printf("Cannot decrypt 6g table %08X.\n", _6gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -756,7 +827,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_7gtable_size <= 0)
                 {
                     printf("Cannot decrypt 7g table %08X.\n", _7gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -775,7 +845,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_8gtable_size <= 0)
                 {
                     printf("Cannot decrypt 8g table %08X.\n", _8gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -794,7 +863,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_9gtable_size <= 0)
                 {
                     printf("Cannot decrypt 9g table %08X.\n", _9gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -813,7 +881,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_10gtable_size <= 0)
                 {
                     printf("Cannot decrypt 10g table %08X.\n", _10gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -832,7 +899,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_11gtable_size <= 0)
                 {
                     printf("Cannot decrypt 11g table %08X.\n", _11gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -851,7 +917,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 if (_12gtable_size <= 0)
                 {
                     printf("Cannot decrypt 12g table %08X.\n", _12gtable_size);
-                    error = 0;
                     continue;
                 }
 
@@ -903,19 +968,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                     }
                 }
 
-                if (strncmp(name, "flash0:/kd/resource/me", 22) == 0) {
-                    cbExpanded = pspDecryptPRX(data2, data1, cbExpanded);
-
-                    if (cbExpanded <= 0)
-                    {
-                        printf("Warning: cannot pre-decrypt 2000 IPL.\n");
-                    }
-                    else
-                    {
-                        memcpy(data2, data1, cbExpanded);
-                    }
-                }
-
                 if (WriteFile(szDataPath, data2, cbExpanded) != cbExpanded)
                 {
                     printf("Cannot write %s.\n", szDataPath);
@@ -923,15 +975,12 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 printf(",saved");
+                CheckExtractReboot(name, mode, data2, cbExpanded, data1, data2);
             }
-            if ((memcmp(data2, "~PSP", 4) == 0) &&
+            if ((memcmp(data2, "~PSP", 4) == 0 || strncmp(name, "flash0:/kd/resource/me", 22) == 0) &&
                 (mode == MODE_DECRYPT))
             {
                 int cbDecrypted = pspDecryptPRX(data2, data1, cbExpanded);
-                if (cbDecrypted <= 0) {
-                    memset(data2+0x104,0,0x28);
-                    cbDecrypted = pspDecryptPRX(data2, data1, cbExpanded);
-                }
 
                 // output goes back to main buffer
                 // trashed 'data2'
@@ -967,6 +1016,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                     }
 
                     printf(",saved!");
+                    CheckExtractReboot(name, mode, pbToSave, cbToSave, data1, data2);
                 }
                 else
                 {
@@ -1000,7 +1050,6 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
         }
 
         printf("\n");
-        error = 0;
     }
 
     return 0;

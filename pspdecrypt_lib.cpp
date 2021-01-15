@@ -5,6 +5,7 @@
 
 extern "C" {
 #include "libkirk/kirk_engine.h"
+#include "kl4e.h"
 }
 #include "pspdecrypt_lib.h"
 #include "PrxDecrypter.h"
@@ -296,10 +297,8 @@ int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity)
 	}
 	else if (memcmp(inbuf, "KL4E", 4) == 0)
 	{
-		//retsize = UtilsForKernel_6C6887EE(outbuf, outcapacity, inbuf+4, NULL);
-		//printf("kl4e, exit\n");
+		retsize = UtilsForKernel_6C6887EE(outbuf, outcapacity, inbuf+4, NULL);
 		printf(",kl4e");
-		retsize = -1;
 	}
 	else if (memcmp(inbuf, "KL3E", 4) == 0) 
 	{
