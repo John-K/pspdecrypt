@@ -217,21 +217,6 @@ int pspIsCompressed(u8 *buf)
 	return res;
 }
 
-
-int decompress_kle(u8 *outbuf, u32 outcapacity, const u8 *inbuf, void *unk)
-{
-	/*int (* decompress)(void *, u32, void *, void *);
-	
-	u32 *mod = (u32 *)sceKernelFindModuleByName("sceLoadExec");
-	u32 text_addr = *(mod+27);
-	decompress = (void *)(text_addr+0);
-
-	return decompress(outbuf, outcapacity, inbuf, unk);
-	*/
-	printf("kle,\n");
-	return -1; // TODO
-}
-
 int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity)
 {
 	int retsize;
@@ -297,12 +282,13 @@ int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity)
 	}
 	else if (memcmp(inbuf, "KL4E", 4) == 0)
 	{
-		retsize = UtilsForKernel_6C6887EE(outbuf, outcapacity, inbuf+4, NULL);
+		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, NULL, 1);
 		printf(",kl4e");
 	}
 	else if (memcmp(inbuf, "KL3E", 4) == 0) 
 	{
-		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, NULL);
+		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, NULL, 0);
+		printf(",kl3e");
 	}
 	else
 	{

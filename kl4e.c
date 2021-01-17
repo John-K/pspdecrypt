@@ -79,7 +79,7 @@ void output_raw(u32 *inputVal, u32 *range, u8 *probs, u8 **inBuf, u32 *curByte, 
     //printf("output raw %02x\n", *curByte & 0xff);
 }
 
-int UtilsForKernel_6C6887EE(u8 *outBuf, int outSize, u8 *inBuf, void **end)
+int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
 {
     u8 litProbs[2040]; // sp..sp+2040 (excluded)
     u8 copyDistBitsProbs[304]; // sp+2040..sp+? (estimated size)
@@ -158,7 +158,7 @@ int UtilsForKernel_6C6887EE(u8 *outBuf, int outSize, u8 *inBuf, void **end)
             if (read_bit(&inputVal, &range, probs, &inBuf, 3, 31)) {
                 copyCount |= 1;
                 if (copyCountBits <= 0) {
-                    powLimit = 256;
+                    powLimit = isKl4e ? 256 : 128;
                     curCopyDistBitsProbs = &copyDistBitsProbs[56 + copyCountBits];
                 }
             } else {
@@ -182,7 +182,7 @@ int UtilsForKernel_6C6887EE(u8 *outBuf, int outSize, u8 *inBuf, void **end)
                     }
                 }
                 curCopyDistBitsProbs = &copyDistBitsProbs[56 + copyCountBits];
-                powLimit = 256;
+                powLimit = isKl4e ? 256 : 128;
             }
         } else {
             powLimit = 64;

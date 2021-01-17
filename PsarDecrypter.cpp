@@ -151,7 +151,7 @@ static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, c
     if (s <= 0)
         return;
 
-    printf("Extracting %s... ", rebootname);
+    printf(",extracting %s", rebootname);
 
     s = FindReboot(data1, data2, s);
     if (s <= 0)
@@ -182,7 +182,7 @@ static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, c
         return;
     }
 
-    printf("done.\n");
+    printf(",done.");
 }
 
 static void CheckExtractReboot(const char *name, int mode, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2) {
