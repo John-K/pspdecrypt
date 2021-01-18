@@ -1,4 +1,7 @@
 /*
+ * Code taken from https://github.com/Grumbel/rfactortools/blob/master/other/quickbms/src/compression/libLZR.h
+ */
+/*
  * libLZR.c
  * 
  * This file is used to de- and encode LZR streams (as used in the Sony PSP firmware)

@@ -1,3 +1,21 @@
+/*
+ * KL4E decompression code, reverse engineered from the 6.60 firmware by artart78.
+ * Original function: UtilsForKernel_6C6887EE from sysmem.prx.
+ *
+ * The original code is most likely written directly on assembly and quite obfuscated (which might just be
+ * a consequence of heavy optimization). This code is a bit simplified on some points (replaced inlined copies
+ * with memcpy, dropped optimized word-by-word copy, dropped a cache instruction) but should be functionally equivalent.
+ * It was split into several functions for readability purposes, but corresponds to a single function.
+ *
+ * KL3E's assembly code is fairly different from KL4E's, but it was found out that just changing one constant made it
+ * work on KL3E. There may be corner cases which are not handled since KL3E's function (sub_00000000 in loadexec)
+ * was not reversed, and there are very likely files which it will decompress "successfully" although they should
+ * give an error (for example, for copy-only not-compressed files).
+ *
+ * Many thanks to BenHur (see libLZR.h) and tpunix (see https://github.com/tpunix/kirk_engine/blob/master/npdpc/tlzrc.c)
+ * for providing code of variants (2RLZ and LZRC?) which helped me a lot understand how the stuff works in general.
+ */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +30,39 @@ typedef int32_t s32;
 
 #define max(a, b) ((a) < (b) ? (b) : (a))
 
+/*
+ * KL4E's behavior seems to be very similar to LZMA.
+ *
+ * It is based on two things:
+ * 1) the LZ77 algorithm
+ * 2) arithmetic coding.
+ *
+ * The first point is just the idea that, in order to compress a stream using repetitions, you can either:
+ * - output a raw byte
+ * - repeat a sequence of previous raw bytes.
+ * In the base LZ77 algorithm, the main loop first reads a bit, then:
+ * - if the bit is a 0, read the next 8 bits and output the byte which corresponds (called a literal),
+ * - if the bit is a 1, read some distance m and length n which can be encoded in various ways, and copy
+ *   the n bytes which were output m bytes earlier.
+ *
+ * Here, instead of encoding bits directly, KL4E uses some kind of arithmetic coding. The general idea is
+ * that you read 4 bytes, then if you know a 1 will happen with probability p, you consider the output
+ * is a 1 if the 4 bytes are in the [0, 2^32 * p] interval, and a 0 if it's in the [2 ^ 32 * p, 2 ^ 32]
+ * interval. You then repeat the operation by taking the subinterval in which the value is, and read another
+ * byte when the interval became smaller than 2^24. The probabilities are also updated each time, by decaying
+ * (they're multiplied by 7/8 or 15/16 each time) and receiving an additional 31 or 15 if the output was indeed a 1.
+ *
+ * Compared to 2RLZ, here all the probabilities are set to a single value given by the header (instead of
+ * just being 0x80 ie 1/2 by default), and a literal is output directly without checking if the first bit is 0.
+ *
+ * The rest is just up to how you encode distance and length codes, which is where the difference between KL3E
+ * and KL4E lies (KL4E seems to be able to have bigger maximum "distance" codes), and also what probabilities
+ * you consider (for example, Sony uses different probabilities depending on the file's offset modulo 8).
+ */
+
+/*
+ * Read one bit using arithmetic coding, with a given (updated) probability and its associated decay/bonus.
+ */
 int read_bit(u32 *inputVal, u32 *range, u8 *probPtr, u8 **inBuf, u32 decay, u32 bonus)
 {
     u32 bound;
@@ -36,6 +87,9 @@ int read_bit(u32 *inputVal, u32 *range, u8 *probPtr, u8 **inBuf, u32 decay, u32 
     }
 }
 
+/*
+ * Same as above, but with balanced probability 1/2.
+ */
 int read_bit_uniform(u32 *inputVal, u32 *range, u8 **inBuf)
 {
     if (*range >> 24 == 0) {
@@ -52,6 +106,9 @@ int read_bit_uniform(u32 *inputVal, u32 *range, u8 **inBuf)
     }
 }
 
+/*
+ * Same as above, but without normalizing the range.
+ */
 int read_bit_uniform_nonormal(u32 *inputVal, u32 *range)
 {
     *range >>= 1;
@@ -63,6 +120,9 @@ int read_bit_uniform_nonormal(u32 *inputVal, u32 *range)
     }
 }
 
+/*
+ * Output a raw byte by reading 8 bits using arithmetic coding.
+ */
 void output_raw(u32 *inputVal, u32 *range, u8 *probs, u8 **inBuf, u32 *curByte, u8 *curOut, u8 shift)
 {
     u32 mask = (((size_t)curOut & 7) << 8) | (*curByte & 0xFF);
@@ -76,16 +136,15 @@ void output_raw(u32 *inputVal, u32 *range, u8 *probs, u8 **inBuf, u32 *curByte, 
         }
     }
     *curOut = *curByte & 0xff;
-    //printf("output raw %02x\n", *curByte & 0xff);
 }
 
 int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
 {
-    u8 litProbs[2040]; // sp..sp+2040 (excluded)
-    u8 copyDistBitsProbs[304]; // sp+2040..sp+? (estimated size)
-    u8 copyDistProbs[144]; // sp+2344..sp+? (estimated size)
-    u8 copyCountBitsProbs[64]; // sp+2488..sp+2552
-    u8 copyCountProbs[256]; // sp+2552..sp+? (estimated size)
+    u8 litProbs[2040];
+    u8 copyDistBitsProbs[304];
+    u8 copyDistProbs[144];
+    u8 copyCountBitsProbs[64];
+    u8 copyCountProbs[256];
     u8 *outEnd = outBuf + outSize;
     u8 *curOut = outBuf;
     u32 curByte = 0;
@@ -93,6 +152,7 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
     u32 copyDist, copyCount;
     u8 *curCopyDistBitsProbs;
     u32 inputVal = (inBuf[1] << 24) | (inBuf[2] << 16) | (inBuf[3] << 8) | inBuf[4];
+    // Handle the direct copy case (if the file is actually not compressed).
     if (inBuf[0] & 0x80) {
         inBuf += 5;
         u8 *dataEnd = outBuf + inputVal;
@@ -108,18 +168,23 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
         }
         return curOut - outBuf;
     }
+    // Initialize probabilities from the header value.
     u8 byte = 128 - (((inBuf[0] >> 3) & 3) << 4);
-    u8 shift = inBuf[0] & 0x7;
     memset(litProbs, byte, sizeof(litProbs));
     memset(copyCountBitsProbs, byte, sizeof(copyCountBitsProbs));
     memset(copyDistBitsProbs, byte, sizeof(copyDistBitsProbs));
     memset(copyCountProbs, byte, sizeof(copyCountProbs));
     memset(copyDistProbs, byte, sizeof(copyDistProbs));
     u8 *curCopyCountBitsProbs = copyCountBitsProbs;
+    /* Shift used to determine if the probabilities should be determined more by the
+     * output's byte alignment or by the previous byte. */
+    u8 shift = inBuf[0] & 0x7;
     inBuf += 5;
+    // Read a literal directly.
     output_raw(&inputVal, &range, litProbs, &inBuf, &curByte, curOut, shift);
     while (1) {
         curOut++;
+        // If we read a 0, read a literal.
         if (read_bit(&inputVal, &range, curCopyCountBitsProbs, &inBuf, 4, 15) == 0) {
             curCopyCountBitsProbs = max(curCopyCountBitsProbs - 1, copyCountBitsProbs);
             if (curOut == outEnd) {
@@ -128,6 +193,7 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
             output_raw(&inputVal, &range, litProbs, &inBuf, &curByte, curOut, shift);
             continue;
         }
+        // Otherwise, first find the number of bits used in the 'length' code.
         copyCount = 1;
         s32 copyCountBits = -1;
         while (copyCountBits < 6) {
@@ -137,6 +203,7 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
             }
             copyCountBits++;
         }
+        // Determine the length itself, and use different distance code probabilities depending on it (and on whether it's KL3E or KL4E).
         s32 powLimit;
         if (copyCountBits >= 0) {
             u8 *probs = &copyCountProbs[(copyCountBits << 5) | ((((size_t)curOut & 3) << (copyCountBits + 3)) & 0x18) | ((size_t)curCopyCountBitsProbs & 7)];
@@ -188,9 +255,9 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
             powLimit = 64;
             curCopyDistBitsProbs = &copyDistBitsProbs[copyCountBits];
         }
-        //printf("copyCount = %d\n", copyCount);
+        // Find out the number of bits used for distance codes.
         s32 curPow = 8;
-        int skip5 = 0;
+        int skip = 0;
         s32 copyDistBits;
         while (1) {
             u8 *curProb = curCopyDistBitsProbs + (curPow - 7);
@@ -204,10 +271,9 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
                     }
                     copyDist = 0;
                     if (curCopyDistBitsProbs == curOut) { // Is this a mistake by Sony?
-                        //printf("???\n");
                         return 0x80000108; // SCE_ERROR_INVALID_FORMAT
                     }
-                    skip5 = 1;
+                    skip = 1; // Just copy with a zero distance.
                     break;
                 }
             } else {
@@ -216,7 +282,8 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
                     break;
             }
         }
-        if (!skip5) {
+        if (!skip) {
+            // Find out the distance itself.
             u8 *curProbs = &copyDistProbs[copyDistBits];
             s32 readBits = copyDistBits / 8;
             if (readBits < 3) {
@@ -265,36 +332,15 @@ int decompress_kle(u8 *outBuf, int outSize, u8 *inBuf, void **end, int isKl4e)
                 }
             }
             if (copyDist >= curOut - outBuf) {
-                //printf("copy distance is too big!\n");
                 return 0x80000108; // SCE_ERROR_INVALID_FORMAT
             }
         }
-        //printf("count=%d dist=%d\n", copyCount, copyDist);
+        // Copy the bytes with the given count and distance
         for (u32 i = 0; i < copyCount + 1; i++) {
             curOut[i] = (curOut - copyDist - 1)[i];
-            //printf("copy %02x\n", curOut[i]);
         }
         curByte = curOut[copyCount];
         curOut += copyCount;
         curCopyCountBitsProbs = &copyCountBitsProbs[6 + ((size_t)curOut & 1)];
     }
 }
-/*
-void main(int argc, char *argv[]) {
-    u8 *out = malloc(2000000);
-    u8 *in = malloc(2000000);
-    FILE *fin = fopen(argv[1], "r");
-    int read = 0;
-    int totalRead = 0;
-    while ((read = fread(&in[totalRead], 1, 64, fin)) > 0) {
-        totalRead += read;
-    }
-    fclose(fin);
-    ////printf("read %d bytes\n");
-    int outs = UtilsForKernel_6C6887EE(out, 2000000, in+4, NULL);
-    //printf("-----> ret %08x\n", outs);
-    FILE *fout = fopen("test", "w");
-    fwrite(out, outs, 1, fout);
-    fclose(fout);
-}
-*/

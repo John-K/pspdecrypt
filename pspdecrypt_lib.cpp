@@ -1,3 +1,7 @@
+/*
+ * Code taken in most part for the newpsardumper-660
+ * See PsarDecrypter.cpp for details.
+ */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

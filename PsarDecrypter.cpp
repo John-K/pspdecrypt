@@ -1,3 +1,22 @@
+/*
+ * Code taken in most part for the newpsardumper-660
+ *
+ * Original author: PspPet
+ *
+ * Contributions:
+ * Vampire (bugfixes)
+ * Nem (ipl decryption)
+ * Dark_AleX (2.60-2.80 decryption)
+ * Noobz (3.00-3.02 decryption)
+ * Team C+D (3.03-3.52 decryption)
+ * M33 Team (3.60-3.71 decryption) + recode for 2.XX+ kernels 
+ * bbtgp (6.00-6.20 decryption)
+ * Proxima, some1 (6.60 version)
+ *
+ * This code was adapted for usage on PC with minor additions and fixes
+ * (ME image decryption, buggy decryption for older firmwares, etc.)
+ */
+
 #include <algorithm>
 #include <array>
 #include <string.h>

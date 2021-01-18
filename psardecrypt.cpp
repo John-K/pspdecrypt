@@ -7,9 +7,6 @@
 #include "PsarDecrypter.h"
 
 using namespace std;
-static const u32 ELF_SIGNATURE = 0x464C457F;
-static const u32 PSP_SIGNATURE = 0x5053507E;
-static const u32 PBP_SIGNATURE = 0x52415350;
 
 int
 main(int argc, char *argv[]) {
@@ -33,6 +30,11 @@ main(int argc, char *argv[]) {
 	inFile.seekg(0, ios::beg);
 	inFile.read(inData, size);
 	inFile.close();
+
+	if (size < 0x38 || *(u32*)inData != 0x50425000) {
+	    printf("Input must be an updater .PBP file.\n");
+	    return 1;
+	}
 
 	u32 psarOff = *(u32*)&inData[0x24];
 	if (psarOff >= size) {
