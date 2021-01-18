@@ -6,6 +6,7 @@
 extern "C" {
 #include "libkirk/kirk_engine.h"
 #include "kl4e.h"
+#include "libLZR.h"
 }
 #include "pspdecrypt_lib.h"
 #include "PrxDecrypter.h"
@@ -244,41 +245,8 @@ int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity)
 	}
 	else if (memcmp(inbuf, "2RLZ", 4) == 0) 
 	{
-		int (*lzrc)(void *outbuf, u32 outcapacity, void *inbuf, void *unk) = NULL;
-		
-			/*
-		if (sceKernelDevkitVersion() >= 0x03080000)
-		{
-			u32 *mod = (u32 *)sceKernelFindModuleByName("sceNp9660_driver");
-			if (!mod)
-				return -1;
-
-			u32 *code = (u32 *)mod[27];
-
-			int i;
-			
-			for (i = 0; i < 0x8000; i++)
-			{
-				if (code[i] == 0x27bdf4f0 && code[i+20] == 0x34018080)
-				{
-					lzrc = (void *)&code[i];
-					break;
-				} 
-			}
-
-			if (i == 0x8000)
-				return -2;
-			//lzrc = lzrc_;
-		}
-		else
-		{
-			lzrc = (void *)sctrlHENFindFunction("sceSystemMemoryManager", "UtilsForKernel", 0x7DD07271);
-
-		}
-		
-		retsize = lzrc(outbuf, outcapacity, inbuf+4, NULL);*/
+	    retsize = LZRDecompress(outbuf, outcapacity, inbuf+4, NULL);
 		printf(",lzrc");
-		retsize = -1; // TODO
 	}
 	else if (memcmp(inbuf, "KL4E", 4) == 0)
 	{

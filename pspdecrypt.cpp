@@ -52,7 +52,7 @@ main(int argc, char *argv[]) {
 			printf("Found PBP, please run unpack-pbp. Exiting.\n");
 			return -1;
 		default:
-			printf("Found unknown file signature 0x%08X, exiting.", file_signature);
+			printf("Found unknown file signature 0x%08X, exiting.\n", file_signature);
 			return -1;
 	};
 
