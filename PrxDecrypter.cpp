@@ -856,6 +856,11 @@ static int pspDecryptType2(const u8 *inbuf, u8 *outbuf, u32 size)
 	// check if range is non-zero
 	if (std::any_of(inbuf+0xD4, inbuf+0xD4+0x58, [](u8 x) { return x != 0; }))
 	{
+		// This PRX area is supposed to be 0's for some PRX types. However, when taken from PSARs, PRXes don't seem to have that
+		// area set to 0 (maybe it's done by the updater? or by the firmware itself?). In order to fix that, the original
+		// psardumper uses a memset() to empty that area. But that area is actually used for older firmware PRXes (probably
+		// type 1 above). So in order to avoid having to try two decryptions, with and without the memset(), we just skip this
+		// check which checks an area which is not used for decryption anyway.
 		//return -2;
 	}
 
@@ -920,6 +925,7 @@ static int pspDecryptType5(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed
 	// check if range is non-zero
 	if (std::any_of(inbuf+0xD4+1, inbuf+0xD4+0x58, [](u8 x) { return x != 0; }))
 	{
+		// Check above for explanations on why this was disabled.
 		//return -2;
 	}
 
@@ -984,6 +990,7 @@ static int pspDecryptType6(const u8 *inbuf, u8 *outbuf, u32 size)
 	// check if range is non-zero
 	if (std::any_of(inbuf+0xD4, inbuf+0xD4+0x38, [](u8 x) { return x != 0; }))
 	{
+		// Check above for explanations on why this was disabled.
 		//return -2;
 	}
 
@@ -1037,7 +1044,7 @@ static int pspDecryptType6(const u8 *inbuf, u8 *outbuf, u32 size)
 	return decryptSize;
 }
 
-int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed)
+int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool verbose)
 {
 	kirk_init();
 	u32 tag = (u32)*(u32_le *)&inbuf[0xD0];
@@ -1047,32 +1054,42 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed)
 	// since we don't know the PRX type we attempt a decrypt using all
 	auto res = pspDecryptType0(inbuf, outbuf, size);
 	if (res >= 0) {
-		//printf("Decryption successful for tag %02X with type 0\n", tag);
+		if (verbose) {
+			printf("Decryption successful for tag %02X with type 0\n", tag);
+		}
 		return res;
 	}
 	
 	res = pspDecryptType1(inbuf, outbuf, size);
 	if (res >= 0) {
-		//printf("Decryption successful for tag %02X with type 1\n", tag);
+		if (verbose) {
+			printf("Decryption successful for tag %02X with type 1\n", tag);
+		}
 		return res;
 	}
 	
 	res = pspDecryptType2(inbuf, outbuf, size);
 	if (res >= 0) {
-		//printf("Decryption successful for tag %02X with type 2\n", tag);
+		if (verbose) {
+			printf("Decryption successful for tag %02X with type 2\n", tag);
+		}
 		return res;
 	}
 	
 	res = pspDecryptType5(inbuf, outbuf, size, seed);
 	if (res >= 0) {
-		//printf("Decryption successful for tag %02X with type 5\n", tag);
+		if (verbose) {
+			printf("Decryption successful for tag %02X with type 5\n", tag);
+		}
 		return res;
 	}
 	
 	res = pspDecryptType6(inbuf, outbuf, size);
 	if (res >= 0) {
-		//printf("Decryption successful for tag %02X with type 6\n", tag);
-	} else {
+		if (verbose) {
+			printf("Decryption successful for tag %02X with type 6\n", tag);
+		}
+	} else if (verbose) {
 		printf("Decryption failed for tag %02X\n", tag);
 	}
 	return res;

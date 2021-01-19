@@ -56,7 +56,7 @@ main(int argc, char *argv[]) {
 			return -1;
 	};
 
-	outSize = pspDecryptPRX((const u8 *)inData, (u8 *)outData, size);
+	outSize = pspDecryptPRX((const u8 *)inData, (u8 *)outData, size, nullptr, true);
 write_file:
 	printf("Decrypt returned %d\n", outSize);
 	if (outSize > 0) {
