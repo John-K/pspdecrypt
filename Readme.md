@@ -1,5 +1,5 @@
 # pspdecrypt
-A quick and *dirty* tool to decrypt PSP binaries.
+A quick and *dirty* tool to decrypt PSP binaries, and also PSP updaters (PSAR format)
 
 Licensed under GPLv3
 
