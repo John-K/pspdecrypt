@@ -521,7 +521,9 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
         printf("pspPSARInit failed with error 0x%08X!.\n", res);
     }
 
-    const char *version = GetVersion((char *)data1+0x10);
+    char version[10];
+    strncpy(version, GetVersion((char *)data1+0x10), 10);
+    version[9] = '\0';
     printf("Version %s.\n", version);
     int table_mode;
 
@@ -586,8 +588,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
         if (is5Dnum(name))
         {
-            if (   strcmp(name, "00001") != 0 && strcmp(name, "00002") != 0 && strcmp(name, "00003") != 0 && strcmp(name, "00004") != 0 && strcmp(name, "00005") != 0
-                && strcmp(name, "00006") != 0 && strcmp(name, "00007") != 0 && strcmp(name, "00008") != 0 && strcmp(name, "00009") != 0 && strcmp(name, "00010") != 0 && strcmp(name, "00011") != 0 && strcmp(name, "00012") != 0)
+            if (atoi(name) >= 100 || (atoi(name) >= 10 && memcmp(version, "6.6", 3) != 0))
             {
                 int found = 0;
 
@@ -809,7 +810,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
                 if (_5gtable_size <= 0)
                 {
-                    printf("Cannot decrypt 5g table %08X.\n", _5gtable_size);
+                    printf("Cannot decrypt 5g table %08X [tag %08X].\n", _5gtable_size, (u32)*(u32_le*)&data2[0xD0]);
                     continue;
                 }
 
@@ -1040,7 +1041,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 else
                 {
 
-                    printf(",not decrypted.\n");
+                    printf(",error during decryption [tag %08x].", (u32)*(u32_le*)&data2[0xD0]);
 
                 }
             }
@@ -1070,6 +1071,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
         printf("\n");
     }
+    printf("Done!\n");
 
     return 0;
 }
