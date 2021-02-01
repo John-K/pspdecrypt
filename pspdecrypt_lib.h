@@ -61,7 +61,7 @@ int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn);
  *
  * @returns the size of the linearalized data on success, 0 on error
 */
-int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn);
+int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr);
 
 /**
  * Decrypts the IPL payload, only valid for 1.00-2.50 IPL

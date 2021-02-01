@@ -306,59 +306,48 @@ static void generate_ecdsa(u8 *outR, u8 *outS, u8 *k, u8 *hash)
     // Verify =
     // r/s * P = m/s * G
 
-// Slightly modified to support kirk compatible signature input - July 2011
-static int check_ecdsa(struct point *Q, u8 *inR, u8 *inS, u8 *hash)
+// Modified version taken from ipltool - the original check_ecdsa() failed for last IPL blocks
+static int check_ecdsa(struct point *Q, u8 *R, u8 *S, u8 *hash)
 {
-  u8 Sinv[21];
-  u8 e[21], R[21], S[21];
-  u8 w1[21], w2[21];
-  struct point r1, r2;
-  u8 rr[21];
+  u8 Sinv[20];
+  u8 e[20];
+  u8 w1[20], w2[20];
+  struct point r1, r2, r3;
+  u8 rr[20];
 
-  e[0] = 0;
-  memcpy(e + 1, hash, 20);
-  bn_reduce(e, ec_N, 21);
-  R[0] = 0;
-  memcpy(R + 1, inR, 20);
-  bn_reduce(R, ec_N, 21);
-  S[0] = 0;
-  memcpy(S + 1, inS, 20);
-  bn_reduce(S, ec_N, 21);
+  memcpy(e, hash, 20);
+  bn_reduce(e, ec_N, 20);
 
-  bn_to_mon(R, ec_N, 21);
-  bn_to_mon(S, ec_N, 21);
-  bn_to_mon(e, ec_N, 21);
-  // make Sinv = 1/S
-  bn_mon_inv(Sinv, S, ec_N, 21);
-  // w1 = m * Sinv
-  bn_mon_mul(w1, e, Sinv, ec_N, 21);
-  // w2 = r * Sinv
-  bn_mon_mul(w2, R, Sinv, ec_N, 21);
+  // Sinv = INV(s)
+  bn_to_mon(S, ec_N, 20);
+  bn_mon_inv(Sinv, S, ec_N, 20);
 
-  // mod N both
-  bn_from_mon(w1, ec_N, 21);
-  bn_from_mon(w2, ec_N, 21);
+  // w1 = e*Sinv
+  bn_to_mon(e, ec_N, 20);
+  bn_mon_mul(w1, e, Sinv, ec_N, 20);
+  bn_from_mon(w1, ec_N, 20);
 
-  // r1 = m/s * G
+  // w2 = R*Sinv
+  bn_to_mon(R, ec_N, 20);
+  bn_mon_mul(w2, R, Sinv, ec_N, 20);
+  bn_from_mon(w2, ec_N, 20);
+
+  // r1 = w1*G
   point_mul(&r1, w1, &ec_G);
-  // r2 = r/s * P
+  // r2 = w2*Q
   point_mul(&r2, w2, Q);
+  // r3 = r1+r2
+  point_add(&r3, &r1, &r2);
 
-  //r1 = r1 + r2
-  point_add(&r1, &r1, &r2);
+  point_from_mon(&r3);
+  memcpy(rr, r3.x, 20);
+  bn_reduce(rr, ec_N, 20);
 
-  point_from_mon(&r1);
+  bn_from_mon(R, ec_N, 20);
+  bn_from_mon(S, ec_N, 20);
 
-  rr[0] = 0;
-  memcpy(rr + 1, r1.x, 20);
-  bn_reduce(rr, ec_N, 21);
-
-  bn_from_mon(R, ec_N, 21);
-  bn_from_mon(S, ec_N, 21);
-
-  return (bn_compare(rr, R, 21) == 0);
+  return bn_compare(rr, R, 20);
 }
-
 
 // Modified from original to support kirk engine use - July 2011
 void ec_priv_to_pub(u8 *k, u8 *Q)

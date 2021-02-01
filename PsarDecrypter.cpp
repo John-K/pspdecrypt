@@ -35,6 +35,8 @@ extern "C"
 #include "PsarDecrypter.h"
 #include "pspdecrypt_lib.h"
 #include "PrxDecrypter.h"
+#include "common.h"
+#include "ipl_decrypt.h"
 
 #define DATA_SIZE 3000000
 
@@ -52,15 +54,6 @@ enum
 };
 
 int mode = MODE_DECRYPT;
-
-int WriteFile(const char *file, void *buf, int size)
-{
-    std::fstream myfile;
-    myfile = std::fstream(file, std::ios::out | std::ios::binary);
-    myfile.write((char*)buf, size);
-    myfile.close();
-    return size;
-}
 
 static char com_table[0x4000];
 static int comtable_size;
@@ -525,6 +518,11 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
     strncpy(version, GetVersion((char *)data1+0x10), 10);
     version[9] = '\0';
     printf("Version %s.\n", version);
+    if (version[1] != '.' || strlen(version) != 4) {
+        printf("Invalid version!?\n");
+        return 1;
+    }
+    int intVersion = (version[0] - '0') * 100 + (version[2] - '0') * 10 + version[3] - '0';
     int table_mode;
 
     if (memcmp(version, "3.8", 3) == 0 || memcmp(version, "3.9", 3) == 0)
@@ -973,17 +971,18 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
             if ((mode != MODE_DECRYPT) || (memcmp(data2, "~PSP", 4) != 0))
             {
-                if (strstr(szDataPath, "ipl") && (strstr(szDataPath, "2000") || strstr(szDataPath, "02h") || strstr(szDataPath, "02g")))
+                if (strncmp(name, "ipl:", 4) == 0 && *(u32*)(data2 + 0x60) != 1)
                 {
                     // IPL Pre-decryption
                     cbExpanded = pspDecryptPRX(data2, data1, cbExpanded);
 
                     if (cbExpanded <= 0)
                     {
-                        printf("Warning: cannot pre-decrypt 2000 IPL.\n");
+                        printf(",pre-decrypt failed");
                     }
                     else
                     {
+                        printf(",pre-decrypt ok");
                         memcpy(data2, data1, cbExpanded);
                     }
                 }
@@ -1048,19 +1047,34 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
             else if (strncmp(name, "ipl:", 4) == 0)
             {
-                sprintf(szDataPath, "./F0/PSARDUMPER/part1_%s", szFileBase);
+                if (*(u32*)(data2 + 0x60) == 0x00010001) {
+                    printf(",cannot decrypt 03g+ IPL");
+                } else {
+                    int cb1 = pspDecryptIPL1(data2, data1, cbExpanded);
+                    if (cb1 > 0)
+                    {
+                        printf(",decrypted IPL");
+                        u32 addr;
+                        int cb2 = pspLinearizeIPL2(data1, data2, cb1, &addr);
+                        sprintf(szDataPath, "./F0/PSARDUMPER/stage1_%s", szFileBase);
+                        if (cb2 > 0 && WriteFile(szDataPath, data2, cb2))
+                        {
+                            printf(",linearized at %08x", addr);
+                        }
+                        else
+                        {
+                            printf(",failed linearizing");
+                        }
 
-                int cb1 = pspDecryptIPL1(data2, data1, cbExpanded);
-                if (cb1 > 0 && (WriteFile(szDataPath, data1, cb1) == cb1))
-                {
-                    int cb2 = pspLinearizeIPL2(data1, data2, cb1);
-                    sprintf(szDataPath, "./F0/PSARDUMPER/part2_%s", szFileBase);
-
-                    WriteFile(szDataPath, data2, cb2);
-
-                    int cb3 = pspDecryptIPL3(data2, data1, cb2);
-                    sprintf(szDataPath, "./F0/PSARDUMPER/part3_%s", szFileBase);
-                    WriteFile(szDataPath, data1, cb3);
+                        if (decryptIPL(data2, cb2, intVersion, addr, szFileBase) != 0)
+                        {
+                            printf(",failed IPL stages decryption");
+                        }
+                    }
+                    else
+                    {
+                        printf(",failed decrypting IPL");
+                    }
                 }
             }
         }
