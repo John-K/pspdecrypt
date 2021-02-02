@@ -45,7 +45,6 @@ main(int argc, char *argv[]) {
 			goto write_file;
 		case 0:
 			printf("Found NULL file signature - is the file empty?\n");
-			break;
 			return -1;
 		case PSP_SIGNATURE:
 			break;
@@ -54,7 +53,6 @@ main(int argc, char *argv[]) {
 			return -1;
 		default:
 			printf("Found unknown file signature 0x%08X, exiting.\n", file_signature);
-			break;
 			return -1;
 	};
 
