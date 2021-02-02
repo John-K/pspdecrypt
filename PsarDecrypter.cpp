@@ -199,43 +199,43 @@ static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, c
 
 static void CheckExtractReboot(const char *name, int mode, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2) {
     if (strcmp(name, "flash0:/kd/loadexec.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot.bin", "reboot.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot.bin", "reboot.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_01g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_01g.bin", "reboot_01g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_01g.bin", "reboot_01g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_02g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_02g.bin", "reboot_02g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_02g.bin", "reboot_02g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_03g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_03g.bin", "reboot_03g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_03g.bin", "reboot_03g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_04g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_04g.bin", "reboot_04g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_04g.bin", "reboot_04g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_05g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_05g.bin", "reboot_05g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_05g.bin", "reboot_05g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_06g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_06g.bin", "reboot_06g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_06g.bin", "reboot_06g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_07g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_07g.bin", "reboot_07g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_07g.bin", "reboot_07g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_08g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_08g.bin", "reboot_08g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_08g.bin", "reboot_08g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_09g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_09g.bin", "reboot_09g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_09g.bin", "reboot_09g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_10g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_10g.bin", "reboot_10g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_10g.bin", "reboot_10g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_11g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_11g.bin", "reboot_11g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_11g.bin", "reboot_11g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_12g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/reboot_12g.bin", "reboot_12g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_12g.bin", "reboot_12g.bin", data1, data2);
     }
 }
 
