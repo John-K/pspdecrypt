@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <zlib.h>
 
 extern "C" {
 #include "libkirk/kirk_engine.h"
@@ -14,6 +13,7 @@ extern "C" {
 }
 #include "pspdecrypt_lib.h"
 #include "PrxDecrypter.h"
+#include "common.h"
 
 ////////// SignCheck //////////
 
@@ -136,7 +136,6 @@ int pspUnsignCheck(u8 *buf)
 ////////// IPL Decryption /////////
 int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn)
 {
-	
 	// 0x1000 pages
     static u8 g_dataTmp[0x1040] __attribute__((aligned(0x40)));
     int cbOut = 0;
@@ -160,20 +159,23 @@ int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn)
     return cbOut;
 }
 
-int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn)
+int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr)
 {
-	
 	u32 nextAddr = 0;
     int cbOut = 0;
     while (cbIn > 0)
     {
         u32* pl = (u32*)pbIn;
         u32 addr = pl[0];
-        
-		if (addr != nextAddr && nextAddr != 0)
-		{
-			return 0;   // error
-		}
+
+        if (addr != nextAddr && nextAddr != 0)
+        {
+            return 0;   // error
+        }
+
+        if (nextAddr == 0) {
+            *startAddr = addr;
+        }
 
         u32 count = pl[1];
         nextAddr = addr + count;
@@ -185,27 +187,6 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn)
     }
 
     return cbOut;
-}
-
-int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn)
-{
-	int ret;
-	
-	// all together now (pbIn/pbOut must be aligned)
-    pbIn += 0x10000;
-    cbIn -= 0x10000;
-	memcpy(pbOut+0x40, pbIn, cbIn);
-	//logbuffer(pbOut+0x40, cbIn);
-	ret = sceUtilsBufferCopyWithRange(pbOut, cbIn+0x40, pbOut+0x40, cbIn, 1);
-	if (ret != 0)
-    {
-		printf("mangle#1 returned $%x\n", ret);
-        return 0;
-    }
-
-	ret = *(u32*)&pbIn[0x70];  // true size
-    
-	return ret;
 }
 
 ////////// Decompression //////////
@@ -228,24 +209,8 @@ int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity)
 	
 	if (inbuf[0] == 0x1F && inbuf[1] == 0x8B) 
 	{
-		//retsize = sceKernelGzipDecompress(outbuf, outcapacity, inbuf, NULL);
-    	z_stream infstream;
-    	infstream.zalloc = Z_NULL;
-    	infstream.zfree = Z_NULL;
-    	infstream.opaque = Z_NULL;
-    	// setup "b" as the input and "c" as the compressed output
-    	infstream.avail_in = insize; // size of input
-    	infstream.next_in = inbuf; // input
-    	infstream.avail_out = outcapacity; // size of output
-    	infstream.next_out = outbuf; // output char array
-     	 
-    	//inflateInit(&infstream);
-    	inflateInit2(&infstream, 16+MAX_WBITS);
-    	int x = inflate(&infstream, Z_NO_FLUSH);
-    	inflateEnd(&infstream);
-
-        retsize = infstream.total_out;
-        //printf("ret %d outsize %d vs expected %d", x, retsize, outcapacity);
+	    retsize = gunzip(inbuf, insize, outbuf, outcapacity);
+	    printf(",gzip");
 	}
 	else if (memcmp(inbuf, "2RLZ", 4) == 0) 
 	{

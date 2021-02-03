@@ -31,19 +31,23 @@ main(int argc, char *argv[]) {
 	inFile.read(inData, size);
 	inFile.close();
 
-	if (size < 0x38 || *(u32*)inData != 0x50425000) {
-	    printf("Input must be an updater .PBP file.\n");
-	    return 1;
-	}
+	if (*(u32*)inData == 0x52415350) {
+	    pspDecryptPSAR((u8*)inData, size);
+	} else {
+	    if (size < 0x38 || *(u32*)inData != 0x50425000) {
+	        printf("Input must be an updater .PBP or a .PSAR file.\n");
+	        return 1;
+	    }
 
-	u32 psarOff = *(u32*)&inData[0x24];
-	if (psarOff >= size) {
-		printf("Wrong PSAR offset!?\n");
-		return 1;
+	    u32 psarOff = *(u32*)&inData[0x24];
+	    if (psarOff >= size) {
+		    printf("Wrong PSAR offset!?\n");
+		    return 1;
+	    }
+	    u8 *psarData = (u8*)&inData[psarOff];
+	    u32 psarSize = (u32)size - psarOff;
+	    pspDecryptPSAR(psarData, psarSize);
 	}
-	u8 *psarData = (u8*)&inData[psarOff];
-	u32 psarSize = (u32)size - psarOff;
-	pspDecryptPSAR(psarData, psarSize);
 
 	delete[] inData;
 
