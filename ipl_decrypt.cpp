@@ -16,6 +16,8 @@ extern "C" {
 // Add this if you want to compute the keys yourself!
 #include "preipl.h"
 #define PREIPL
+// Note that the size to specify for testing tools is 704 although in theory it's 4096.
+// It's 704 for devkit too (size of the random blob they put in memory before running the IPL)
 #define PREIPL_SIZE 4096
 */
 
@@ -39,7 +41,7 @@ u8 *g_newKey;
 u8 *g_xorKey;
 u8 g_checksum;
 
-// Keys from preipl sha256 1e6fc02124901f6f5a3f1bb02f065064c63e423d759a131ba1086ea8fc2d90aa
+// Keys from preipl sha256 41b2578f84bde33e09356f0170ff99e2417ea7b1d02bd9163a41ae61fe74c3a5
 std::map<u32, std::array<u32, 8>> g_keys {
     {0x3ca104f4, {0x351934f6, 0x7c77b627, 0xc774d96b, 0xac1381ef, 0xa93ba068, 0x9bf7a518, 0xd7e040e4, 0x41d18c07}}, // 2.60
     {0x3f0449dd, {0x941a62b7, 0xa8b33d7e, 0xf59f3d90, 0xbfe0a24d, 0x295206e9, 0xe8d280fa, 0xb705572a, 0x99ad3262}}, // 2.7x
@@ -67,6 +69,9 @@ std::map<u32, std::array<u32, 8>> g_keys {
     {0x545f427d, {0x1039fa9d, 0x4dbb2c77, 0x85c4f2c2, 0x51603084, 0x45190185, 0x0dea4d7d, 0x9c2853b8, 0x00000000}}, // 6.3x 02g
     {0x5eb2f991, {0x5ccf8527, 0x2ff4adbb, 0x90c4a5ff, 0x64a5a0b3, 0xe2db29d9, 0x4a3507db, 0x51cf76e7, 0x00000000}}, // 6.6x 01g
     {0xfeadb708, {0x54db38ee, 0x84cfaea2, 0xf85925fb, 0xcba099a5, 0x9292dfab, 0xffa59b39, 0x5db31507, 0x00000000}}, // 6.6x 02g
+    {0xb189b51f, {0xd0f4ce57, 0xdab147d0, 0xa074dd43, 0xbf611bd7, 0x2a63d331, 0x838fa853, 0x145e39af, 0x00000000}}, // 6.00, 6.20 testing tool
+    {0xa8adc5c2, {0xc2808a14, 0x0b449fb7, 0x7b2c7edc, 0xa81dc907, 0x99206828, 0xe3a76c7d, 0xa410c092, 0x00000000}}, // 6.39 testing tool
+    {0xb331d7a6, {0x0163e80e, 0x3175e31e, 0xe5134ea3, 0x03d1bb84, 0x49cd898d, 0x41f3047a, 0x7de563d1, 0x00000000}}  // 6.60 testing tool
 };
 
 s32 sha256Digest(u8 *data, u32 size, u8 *digest);
@@ -439,6 +444,7 @@ void decrypt330(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encr
     scrambleBuf(g_newKey, preiplSize, (u8*)buf2, PREIPL_SIZE, buf1);
     memset(buf2, 0, 4096);
     memset(&ctx, 0, 2500);
+    // Note the checksum part does not exist for testing tools since it only allows one preipl format (but the XOR doesn't seem to be triggered anyway)
     u8 checksum = 0;
     // 10F0
     for (s32 i = 0; i < 32; i++) {
