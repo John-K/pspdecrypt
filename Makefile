@@ -10,7 +10,7 @@ OBJS_PSAR=libLZR.o kl4e.o common.o ipl_decrypt.o pspdecrypt_lib.o PrxDecrypter.o
 all: $(BIN_PSP) $(BIN_PSAR)
 
 $(BIN_PSP): $(OBJS_PSP)
-	clang++ -o $@ $(OBJS_PSP)
+	$(CXX) -o $@ $(OBJS_PSP)
 
 $(BIN_PSAR): $(OBJS_PSAR)
-	clang++ -o $@ $(OBJS_PSAR) -lz -lcrypto
+	$(CXX) -o $@ $(OBJS_PSAR) -lz -lcrypto
