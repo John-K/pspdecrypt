@@ -12,7 +12,7 @@
  *
  */
 
-#include <malloc.h>
+#include <stdlib.h>
 #include "libLZR.h"
 
 void LZRFillBuffer(unsigned int *test_mask, unsigned int *mask, unsigned int *buffer, unsigned char **next_in) {
