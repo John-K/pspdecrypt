@@ -554,6 +554,10 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
         table_mode = 0;
     }
 
+#ifdef _WIN32
+	#define mkdir(a,b) mkdir(a)
+#endif
+
     mkdir("./F0", 0777);
     mkdir("./F0/PSARDUMPER", 0777);
     mkdir("./F0/data", 0777);
