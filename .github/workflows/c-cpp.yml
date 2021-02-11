@@ -38,7 +38,7 @@ jobs:
                 mingw-w64-x86_64-openssl
       - uses: actions/checkout@v2
       - name: Makes Binaries
-        run: make
+        run: make EXTRA_FLAG=-static
       - name: Prepare Artifacts
         run: mkdir artifact && mv psardecrypt artifact/. && mv pspdecrypt artifact/.
       - name: Upload Artifacts
