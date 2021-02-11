@@ -1,5 +1,7 @@
 CC=clang
 CXX=clang++
+EXTRA_FLAG=
+
 
 BIN_PSP=pspdecrypt
 BIN_PSAR=psardecrypt
@@ -10,7 +12,7 @@ OBJS_PSAR=libLZR.o kl4e.o common.o ipl_decrypt.o pspdecrypt_lib.o PrxDecrypter.o
 all: $(BIN_PSP) $(BIN_PSAR)
 
 $(BIN_PSP): $(OBJS_PSP)
-	clang++ -o $@ $(OBJS_PSP)
+	$(CXX) $(EXTRA_FLAG) -o $@ $(OBJS_PSP)
 
 $(BIN_PSAR): $(OBJS_PSAR)
-	clang++ -o $@ $(OBJS_PSAR) -lz -lcrypto
+	$(CXX) $(EXTRA_FLAG) -o $@ $(OBJS_PSAR) -lz -lcrypto
