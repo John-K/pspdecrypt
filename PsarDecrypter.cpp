@@ -1055,34 +1055,30 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
             else if (strncmp(name, "ipl:", 4) == 0)
             {
-                if (*(u32*)(data2 + 0x60) == 0x00010001) {
-                    printf(",cannot decrypt 03g+ IPL");
-                } else {
-                    int cb1 = pspDecryptIPL1(data2, data1, cbExpanded);
-                    if (cb1 > 0)
+                int cb1 = pspDecryptIPL1(data2, data1, cbExpanded);
+                if (cb1 > 0)
+                {
+                    printf(",decrypted IPL");
+                    u32 addr;
+                    int cb2 = pspLinearizeIPL2(data1, data2, cb1, &addr);
+                    sprintf(szDataPath, "./F0/PSARDUMPER/stage1_%s", szFileBase);
+                    if (cb2 > 0 && WriteFile(szDataPath, data2, cb2))
                     {
-                        printf(",decrypted IPL");
-                        u32 addr;
-                        int cb2 = pspLinearizeIPL2(data1, data2, cb1, &addr);
-                        sprintf(szDataPath, "./F0/PSARDUMPER/stage1_%s", szFileBase);
-                        if (cb2 > 0 && WriteFile(szDataPath, data2, cb2))
-                        {
-                            printf(",linearized at %08x", addr);
-                        }
-                        else
-                        {
-                            printf(",failed linearizing");
-                        }
-
-                        if (decryptIPL(data2, cb2, intVersion, addr, szFileBase) != 0)
-                        {
-                            printf(",failed IPL stages decryption");
-                        }
+                        printf(",linearized at %08x", addr);
                     }
                     else
                     {
-                        printf(",failed decrypting IPL");
+                        printf(",failed linearizing");
                     }
+
+                    if (decryptIPL(data2, cb2, intVersion, addr, szFileBase) != 0)
+                    {
+                        printf(",failed IPL stages decryption");
+                    }
+                }
+                else
+                {
+                    printf(",failed decrypting IPL");
                 }
             }
         }

@@ -133,25 +133,113 @@ int pspUnsignCheck(u8 *buf)
 	return 0;
 }
 
+int kirk1block(const u8 *pbIn, u8 *pbOut)
+{
+    static u8 g_dataTmp[0x1040] __attribute__((aligned(0x40)));
+    memcpy(g_dataTmp+0x40, pbIn, 0x1000);
+    int ret = sceUtilsBufferCopyWithRange(g_dataTmp, 0x1040, g_dataTmp+0x40, 0x500, 1);
+    if (ret != 0) {
+        return ret;
+    }
+    memcpy(pbOut, g_dataTmp, 0x1000);
+    return 0;
+}
+
+/* xor keys & original descrambling code thanks to Davee and Proxima's awesome work! */
+u32 xorkeys[] = {
+    0x61A0C918, 0x45695E82, 0x9CAFD36E, 0xFA499B0F,
+    0x7E84B6E2, 0x91324D29, 0xB3522009, 0xA8BC0FAF,
+    0x48C3C1C5, 0xE4C2A9DC, 0x00012ED1, 0x57D9327C,
+    0xAFB8E4EF, 0x72489A15, 0xC6208D85, 0x06021249,
+    0x41BE16DB, 0x2BD98F2F, 0xD194BEEB, 0xD1A6E669,
+    0xC0AC336B, 0x88FF3544, 0x5E018640, 0x34318761,
+    0x5974E1D2, 0x1E55581B, 0x6F28379E, 0xA90E2587,
+    0x091CB883, 0xBDC2088A, 0x7E76219C, 0x9C4BEE1B,
+    0xDD322601, 0xBB477339, 0x6678CF47, 0xF3C1209B,
+    0x5A96E435, 0x908896FA, 0x5B2D962A, 0x7FEC378C,
+    0xE3A3B3AE, 0x8B902D93, 0xD0DF32EF, 0x6484D261,
+    0x0A84A153, 0x7EB16575, 0xB10E53DD, 0x1B222753,
+    0x58DD63D0, 0x8E8B8D48, 0x755B32C2, 0xA63DFFF7,
+    0x97CABF7C, 0x33BDC660, 0x64522286, 0x403F3698,
+    0x3406C651, 0x9F4B8FB9, 0xE284F475, 0xB9189A13,
+    0x12C6F917, 0x5DE6B7ED, 0xDB674F88, 0x06DDB96E,
+    0x2B2165A6, 0x0F920D3F, 0x732B3475, 0x1908D613
+};
+
+u32 bitrev(u32 b) {
+    u32 i = 0;
+    u32 x = 0;
+    for (i = 0; i < 32; i++) {
+        x |= ((b & (1<<i))>>i) << (0x1F-i);
+    }
+    return x;
+}
+
+// Additional scrambling for 03g+ IPLs
+void descramble03g(u32 *data, u32 i)
+{
+    u32 idx = (i >> 5) & 0x3F;
+    u32 rot = i & 0x1F;
+    u32 x1 = xorkeys[idx];
+    u32 x2 = xorkeys[idx+1];
+    u32 x3 = xorkeys[idx+2];
+    u32 x4 = xorkeys[idx+3];
+    x1 = ((x1 >> rot) | (x1 << (0x20-rot)));
+    x2 = bitrev(((x2 >> rot) | (x2 << (0x20-rot))));
+    x3 = (((x3 >> rot) | (x3 << (0x20-rot)))  ^ x4);
+    x4 = ((x4 >> rot) | (x4 << (0x20-rot)));
+    data[0] ^= x1;
+    data[1] ^= x2;
+    data[2] ^= x3;
+    data[3] ^= x4;
+}
+
 ////////// IPL Decryption /////////
 int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn)
 {
-	// 0x1000 pages
-    static u8 g_dataTmp[0x1040] __attribute__((aligned(0x40)));
     int cbOut = 0;
+    int xorkeyIdx = -1;
     while (cbIn >= 0x1000)
     {
-	    memcpy(g_dataTmp+0x40, pbIn, 0x1000);
+        if (pbIn[0x62] == 1) {
+            u8 decData[0x1000];
+            memcpy(decData, pbIn, 0x1000);
+            decData[0x62] = 0;
+            // In practice, xorkeyIdx = 2 on 05g and xorkeyIdx = 1 on the other models, but who knows
+            if (xorkeyIdx == -1) {
+                u32 i;
+                for (i = 0; i < 0x7E0; i++) {
+                    descramble03g((u32*)decData, i);
+                    int ret = kirk1block(decData, pbOut);
+                    if (ret == 0) {
+                        break;
+                    }
+                    memcpy(decData, pbIn, 16); // reset header
+                }
+                if (i == 0x7E0) {
+                    printf("Decrypt IPL 1 for 03g+ failed for first block!\n");
+                    break;
+                }
+                xorkeyIdx = i;
+                printf(",descramble using xorkey %d", xorkeyIdx);
+            } else {
+                descramble03g((u32*)decData, xorkeyIdx);
+                int ret = kirk1block(decData, pbOut);
+                if (ret != 0) {
+                    printf("Decrypt IPL 1 for 03g+ failed for other blocks!\n");
+                    break;
+                }
+            }
+        } else {
+            int ret = kirk1block(pbIn, pbOut);
+	        if (ret != 0)
+            {
+	            printf("Decrypt IPL 1 failed 0x%08X, WTF!\n", ret);
+                break; // stop, save what we can
+            }
+        }
         pbIn += 0x1000;
         cbIn -= 0x1000;
-				//logbuffer(g_dataTmp+0x40,0x500);
-        int ret = sceUtilsBufferCopyWithRange(g_dataTmp, 0x1040, g_dataTmp+0x40, 0x500, 1);
-	    if (ret != 0)
-        {
-	        printf("Decrypt IPL 1 failed 0x%08X, WTF!\n", ret);
-            break; // stop, save what we can
-        }
-        memcpy(pbOut, g_dataTmp, 0x1000);
         pbOut += 0x1000;
         cbOut += 0x1000;
     }
