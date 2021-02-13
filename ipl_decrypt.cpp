@@ -791,7 +791,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
         } else {
             printf(",kernel keys decrypted");
             sprintf(szDataPath, "./F0/PSARDUMPER/kkeys_%s", filename);
-            WriteFile(szDataPath, inData+kernelKeys_addr-loadAddr, decSize);
+            WriteFile(szDataPath, outBuf, decSize);
         }
     }
 
