@@ -812,8 +812,12 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
                 if (_5gtable_size <= 0)
                 {
-                    printf("Cannot decrypt 5g table %08X [tag %08X].\n", _5gtable_size, (u32)*(u32_le*)&data2[0xD0]);
-                    continue;
+                    _5gtable_size = pspDecryptTable(data2, data1, cbExpanded, 5);
+                    if (_5gtable_size <= 0)
+                    {
+                        printf("Cannot decrypt 5g table %08X [tag %08X].\n", _5gtable_size, (u32)*(u32_le*)&data2[0xD0]);
+                        continue;
+                    }
                 }
 
                 if (_5gtable_size > sizeof(_5g_table))
