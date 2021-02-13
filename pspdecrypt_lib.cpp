@@ -651,10 +651,10 @@ int pspDecryptTable(u8 *buf1, u8 *buf2, int size, int mode)
 {
 	int retsize;
 
-	DecryptT(buf1, size >> 3, mode);
-
 	if (buf1 != buf2) memcpy(buf2, buf1, size);
-	
+
+	DecryptT(buf2, size >> 3, mode);
+
 	retsize = pspDecryptPRX(buf2, buf1, size);
 	if (retsize < 0)
 	{	
