@@ -1,7 +1,9 @@
 CC=clang
 CXX=clang++
+#EXTRA_FLAG= -lprofiler
 EXTRA_FLAG=
-
+CFLAGS=-O3
+CXXFLAGS=-O3
 
 BIN_PSP=pspdecrypt
 BIN_PSAR=psardecrypt
@@ -16,3 +18,7 @@ $(BIN_PSP): $(OBJS_PSP)
 
 $(BIN_PSAR): $(OBJS_PSAR)
 	$(CXX) $(EXTRA_FLAG) -o $@ $(OBJS_PSAR) -lz -lcrypto
+
+.PHONY: clean
+clean:
+	-rm -f $(BIN_PSP) $(BIN_PSAR) *.o
