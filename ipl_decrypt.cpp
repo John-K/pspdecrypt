@@ -508,7 +508,7 @@ int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn)
 }
 
 // Decompress/unscramble IPL stages 2 & 3 and kernel keys
-int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename)
+int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir)
 {
     if (debug) {
         printf("Version %d\n", version);
@@ -550,10 +550,10 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
                 if (debug) {
                     printf("decompressed %d bytes\n", decSize);
                 }
-                sprintf(szDataPath, "./F0/PSARDUMPER/stage2_%s.gz", filename);
+                sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage2_%s.gz").c_str(), filename);
                 WriteFile(szDataPath, (u8*)inData+gzip_addr-loadAddr, realInSize);
 
-                sprintf(szDataPath, "./F0/PSARDUMPER/stage2_%s", filename);
+                sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage2_%s").c_str(), filename);
                 WriteFile(szDataPath, decBuf, decSize);
                 printf(",stage2 decompressed");
                 decSize = pspDecryptIPL3((u8*)inData+img2_addr-loadAddr, outBuf, inDataSize - (img2_addr-loadAddr));
@@ -561,7 +561,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
                     printf("Failed decrypting stage3!\n");
                 } else {
                     printf(",stage3 decrypted");
-                    sprintf(szDataPath, "./F0/PSARDUMPER/stage3_%s", filename);
+                    sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage3_%s").c_str(), filename);
                     WriteFile(szDataPath, outBuf, decSize);
                     if (debug) {
                         printf("decrypted %d bytes\n", decSize);
