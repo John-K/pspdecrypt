@@ -16,7 +16,7 @@ jobs:
     - name: Make binaries
       run: make
     - name: Prepare Artifacts
-      run: mkdir artifact && mv psardecrypt artifact/. && mv pspdecrypt artifact/.
+      run: mkdir artifact && mv psardecrypt artifact/. && mv pspdecrypt artifact/. && cp Readme.md artifact/.
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -40,7 +40,7 @@ jobs:
       - name: Makes Binaries
         run: make EXTRA_FLAG=-static
       - name: Prepare Artifacts
-        run: mkdir artifact && mv psardecrypt artifact/. && mv pspdecrypt artifact/.
+        run: mkdir artifact && mv psardecrypt artifact/. && mv pspdecrypt artifact/. && cp Readme.md artifact/.
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -60,7 +60,7 @@ jobs:
         export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl/lib/
         make CXX='clang++ -std=c++11'
     - name: Prepare Artifacts
-      run: mkdir artifact && mv psardecrypt artifact/. && mv pspdecrypt artifact/.
+      run: mkdir artifact && mv psardecrypt artifact/. && mv pspdecrypt artifact/. && cp Readme.md artifact/.
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
