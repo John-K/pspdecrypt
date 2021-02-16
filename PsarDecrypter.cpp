@@ -703,16 +703,16 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
 
         if (cbExpanded > 0)
         {
-            char szDataPath[128];
+            std::string szDataPath;
 
             if (!strncmp(name, "flash0:/", 8))
             {
-                sprintf(szDataPath, (outdir + "/F0/%s").c_str(), name+8);
+                szDataPath = outdir + "/F0/" + (name + 8);
             }
 
             else if (!strncmp(name, "flash1:/", 8))
             {
-                sprintf(szDataPath, (outdir + "/F1/%s").c_str(), name+8);
+                szDataPath = outdir + "/F1/" + (name + 8);
             }
 
             else if (!strcmp(name, "com:00000"))
@@ -730,7 +730,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(com_table, data2, comtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/common_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/common_files_table.bin";
             }
 
             else if (!strcmp(name, "01g:00000") || !strcmp(name, "00001"))
@@ -750,7 +750,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_1g_table, data2, _1gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/1000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/1000_files_table.bin";
             }
             else if (!strcmp(name, "02g:00000") || !strcmp(name, "00002"))
             {
@@ -767,7 +767,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_2g_table, data2, _2gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/2000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/2000_files_table.bin";
             }
 
             else if (!strcmp(name, "00003"))
@@ -787,7 +787,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_3g_table, data2, _3gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/3000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/3000_files_table.bin";
             }
             else if (!strcmp(name, "00004"))
             {
@@ -805,7 +805,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_4g_table, data2, _4gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/4000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/4000_files_table.bin";
             }
             else if (!strcmp(name, "00005"))
             {
@@ -827,7 +827,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_5g_table, data2, _5gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/5000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/5000_files_table.bin";
             }
             else if (!strcmp(name, "00006"))
             {
@@ -845,7 +845,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_6g_table, data2, _6gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/6000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/6000_files_table.bin";
             }
             else if (!strcmp(name, "00007"))
             {
@@ -863,7 +863,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_7g_table, data2, _7gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/7000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/7000_files_table.bin";
             }
             else if (!strcmp(name, "00008"))
             {
@@ -881,7 +881,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_8g_table, data2, _8gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/8000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/8000_files_table.bin";
             }
             else if (!strcmp(name, "00009"))
             {
@@ -899,7 +899,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_9g_table, data2, _9gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/9000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/9000_files_table.bin";
             }
             else if (!strcmp(name, "00010"))
             {
@@ -917,7 +917,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_10g_table, data2, _10gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/10000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/10000_files_table.bin";
             }
             else if (!strcmp(name, "00011"))
             {
@@ -935,7 +935,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_11g_table, data2, _11gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/11000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/11000_files_table.bin";
             }
             else if (!strcmp(name, "00012"))
             {
@@ -953,12 +953,12 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 memcpy(_12g_table, data2, _12gtable_size);
-                strcpy(szDataPath, (outdir + "/F0/PSARDUMPER/12000_files_table.bin").c_str());
+                szDataPath = outdir + "/F0/PSARDUMPER/12000_files_table.bin";
             }
 
             else
             {
-                sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/%s").c_str(), strrchr(name, '/') + 1);
+                szDataPath = outdir + "/F0/PSARDUMPER/" + (strrchr(name, '/') + 1);
             }
 
             printf("expanded");
@@ -996,9 +996,9 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                     }
                 }
 
-                if (WriteFile(szDataPath, data2, cbExpanded) != cbExpanded)
+                if (WriteFile(szDataPath.c_str(), data2, cbExpanded) != cbExpanded)
                 {
-                    printf("Cannot write %s.\n", szDataPath);
+                    printf("Cannot write %s.\n", szDataPath.c_str());
                     break;
                 }
 
@@ -1038,9 +1038,9 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                         }
                     }
 
-                    if (WriteFile(szDataPath, pbToSave, cbToSave) != cbToSave)
+                    if (WriteFile(szDataPath.c_str(), pbToSave, cbToSave) != cbToSave)
                     {
-                        printf("Error writing %s.\n", szDataPath);
+                        printf("Error writing %s.\n", szDataPath.c_str());
                     }
 
                     printf(",saved!");
@@ -1062,8 +1062,8 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                     printf(",decrypted IPL");
                     u32 addr;
                     int cb2 = pspLinearizeIPL2(data1, data2, cb1, &addr);
-                    sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage1_%s").c_str(), szFileBase);
-                    if (cb2 > 0 && WriteFile(szDataPath, data2, cb2))
+                    szDataPath = outdir + "/F0/PSARDUMPER/stage1_" + szFileBase;
+                    if (cb2 > 0 && WriteFile(szDataPath.c_str(), data2, cb2))
                     {
                         printf(",linearized at %08x", addr);
                     }
