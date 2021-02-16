@@ -12,12 +12,19 @@ int
 main(int argc, char *argv[]) {
 	int outSize;
 
-	if (argc != 3) {
-		printf("Usage: %s <infile> <outdir> \n", basename(argv[0]));
+	if (argc != 3 && argc != 2) {
+		printf("Usage: %s <infile> [outdir] \n", basename(argv[0]));
 		return 1;
 	}
 	string filename = string(argv[1]) + ".dec";
-	string outdir = string(argv[2]);
+	string outdir;
+	
+	if(argc == 3) {
+		outdir = string(argv[2]);
+	}
+	else if (argc == 2){
+		outdir = string("./");
+	}
 	const char *outFilename = filename.c_str();
 
 	ifstream inFile (argv[1], ios::in|ios::binary|ios::ate);
