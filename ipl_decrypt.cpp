@@ -702,10 +702,10 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
     if (debug) {
         printf("decompressed %d bytes\n", decSize);
     }
-    sprintf(szDataPath, "./F0/PSARDUMPER/stage2_%s.gz", filename);
+    sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage2_%s.gz").c_str(), filename);
     WriteFile(szDataPath, (u8*)inData+img_off-loadAddr, realInSize);
 
-    sprintf(szDataPath, "./F0/PSARDUMPER/stage2_%s", filename);
+    sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage2_%s").c_str(), filename);
     WriteFile(szDataPath, decBuf, decSize);
     printf(",stage2 unscrambled & decompressed");
 
@@ -806,7 +806,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
             printf("Failed decrypting kernel keys!\n");
         } else {
             printf(",kernel keys decrypted");
-            sprintf(szDataPath, "./F0/PSARDUMPER/kkeys_%s", filename);
+            sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/kkeys_%s").c_str(), filename);
             WriteFile(szDataPath, outBuf, decSize);
         }
     }
@@ -832,15 +832,15 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
             if (debug) {
                 printf("decompressed %d bytes\n", decompSize);
             }
-            sprintf(szDataPath, "./F0/PSARDUMPER/stage3_%s.gz", filename);
+            sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage3_%s.gz").c_str(), filename);
             WriteFile(szDataPath, outBuf, realInSize);
 
-            sprintf(szDataPath, "./F0/PSARDUMPER/stage3_%s", filename);
+            sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage3_%s").c_str(), filename);
             WriteFile(szDataPath, decBuf, decompSize);
             printf(",stage3 decrypted & decompressed");
         } else {
             printf(",stage3 decrypted");
-            sprintf(szDataPath, "./F0/PSARDUMPER/stage3_%s", filename);
+            sprintf(szDataPath, (outdir + "/F0/PSARDUMPER/stage3_%s").c_str(), filename);
             WriteFile(szDataPath, outBuf, decSize);
         }
     }
