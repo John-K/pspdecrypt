@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <string>
+#include <cstring>
 #include <cstdio>
 #include <openssl/sha.h>
 #include <map>
