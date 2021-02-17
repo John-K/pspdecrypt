@@ -197,45 +197,45 @@ static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, c
     printf(",done.");
 }
 
-static void CheckExtractReboot(const char *name, int mode, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2) {
+static void CheckExtractReboot(const char *name, int mode, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2, std::string outdir) {
     if (strcmp(name, "flash0:/kd/loadexec.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot.bin", "reboot.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot.bin").c_str(), "reboot.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_01g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_01g.bin", "reboot_01g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_01g.bin").c_str(), "reboot_01g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_02g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_02g.bin", "reboot_02g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_02g.bin").c_str(), "reboot_02g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_03g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_03g.bin", "reboot_03g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_03g.bin").c_str(), "reboot_03g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_04g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_04g.bin", "reboot_04g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_04g.bin").c_str(), "reboot_04g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_05g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_05g.bin", "reboot_05g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_05g.bin").c_str(), "reboot_05g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_06g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_06g.bin", "reboot_06g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_06g.bin").c_str(), "reboot_06g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_07g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_07g.bin", "reboot_07g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_07g.bin").c_str(), "reboot_07g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_08g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_08g.bin", "reboot_08g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_08g.bin").c_str(), "reboot_08g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_09g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_09g.bin", "reboot_09g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_09g.bin").c_str(), "reboot_09g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_10g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_10g.bin", "reboot_10g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_10g.bin").c_str(), "reboot_10g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_11g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_11g.bin", "reboot_11g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_11g.bin").c_str(), "reboot_11g.bin", data1, data2);
     }
     if (strcmp(name, "flash0:/kd/loadexec_12g.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, "./F0/PSARDUMPER/reboot_12g.bin", "reboot_12g.bin", data1, data2);
+        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/F0/PSARDUMPER/reboot_12g.bin").c_str(), "reboot_12g.bin", data1, data2);
     }
 }
 
@@ -498,7 +498,7 @@ static int is5Dnum(char *str)
 
 #define PSAR_BUFFER_SIZE    9400000
 
-int pspDecryptPSAR(u8 *dataPSAR, u32 size)
+int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
 {
     kirk_init();
     if (memcmp(dataPSAR, "PSAR", 4) != 0) {
@@ -558,19 +558,20 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 	#define mkdir(a,b) mkdir(a)
 #endif
 
-    mkdir("./F0", 0777);
-    mkdir("./F0/PSARDUMPER", 0777);
-    mkdir("./F0/data", 0777);
-    mkdir("./F0/dic", 0777);
-    mkdir("./F0/font", 0777);
-    mkdir("./F0/kd", 0777);
-    mkdir("./F0/vsh", 0777);
-    mkdir("./F0/data/cert", 0777);
-    mkdir("./F0/kd/resource", 0777);
-    mkdir("./F0/vsh/etc", 0777);
-    mkdir("./F0/vsh/module", 0777);
-    mkdir("./F0/vsh/resource", 0777);
-    mkdir("./F0/codepage", 0777);
+    mkdir((outdir).c_str(), 0777);
+    mkdir((outdir + "/F0").c_str(), 0777);
+    mkdir((outdir + "/F0/PSARDUMPER").c_str(), 0777);
+    mkdir((outdir + "/F0/data").c_str(), 0777);
+    mkdir((outdir + "/F0/dic").c_str(), 0777);
+    mkdir((outdir + "/F0/font").c_str(), 0777);
+    mkdir((outdir + "/F0/kd").c_str(), 0777);
+    mkdir((outdir + "/F0/vsh").c_str(), 0777);
+    mkdir((outdir + "/F0/data/cert").c_str(), 0777);
+    mkdir((outdir + "/F0/kd/resource").c_str(), 0777);
+    mkdir((outdir + "/F0/vsh/etc").c_str(), 0777);
+    mkdir((outdir + "/F0/vsh/module").c_str(), 0777);
+    mkdir((outdir + "/F0/vsh/resource").c_str(), 0777);
+    mkdir((outdir + "/F0/codepage").c_str(), 0777);
 
     printf("table_mode = %d\n", table_mode);
 
@@ -702,16 +703,16 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
 
         if (cbExpanded > 0)
         {
-            char szDataPath[128];
+            std::string szDataPath;
 
             if (!strncmp(name, "flash0:/", 8))
             {
-                sprintf(szDataPath, "./F0/%s", name+8);
+                szDataPath = outdir + "/F0/" + (name + 8);
             }
 
             else if (!strncmp(name, "flash1:/", 8))
             {
-                sprintf(szDataPath, "./F1/%s", name+8);
+                szDataPath = outdir + "/F1/" + (name + 8);
             }
 
             else if (!strcmp(name, "com:00000"))
@@ -729,7 +730,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(com_table, data2, comtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/common_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/common_files_table.bin";
             }
 
             else if (!strcmp(name, "01g:00000") || !strcmp(name, "00001"))
@@ -749,7 +750,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_1g_table, data2, _1gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/1000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/1000_files_table.bin";
             }
             else if (!strcmp(name, "02g:00000") || !strcmp(name, "00002"))
             {
@@ -766,7 +767,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_2g_table, data2, _2gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/2000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/2000_files_table.bin";
             }
 
             else if (!strcmp(name, "00003"))
@@ -786,7 +787,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_3g_table, data2, _3gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/3000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/3000_files_table.bin";
             }
             else if (!strcmp(name, "00004"))
             {
@@ -804,7 +805,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_4g_table, data2, _4gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/4000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/4000_files_table.bin";
             }
             else if (!strcmp(name, "00005"))
             {
@@ -826,7 +827,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_5g_table, data2, _5gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/5000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/5000_files_table.bin";
             }
             else if (!strcmp(name, "00006"))
             {
@@ -844,7 +845,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_6g_table, data2, _6gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/6000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/6000_files_table.bin";
             }
             else if (!strcmp(name, "00007"))
             {
@@ -862,7 +863,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_7g_table, data2, _7gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/7000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/7000_files_table.bin";
             }
             else if (!strcmp(name, "00008"))
             {
@@ -880,7 +881,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_8g_table, data2, _8gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/8000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/8000_files_table.bin";
             }
             else if (!strcmp(name, "00009"))
             {
@@ -898,7 +899,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_9g_table, data2, _9gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/9000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/9000_files_table.bin";
             }
             else if (!strcmp(name, "00010"))
             {
@@ -916,7 +917,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_10g_table, data2, _10gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/10000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/10000_files_table.bin";
             }
             else if (!strcmp(name, "00011"))
             {
@@ -934,7 +935,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_11g_table, data2, _11gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/11000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/11000_files_table.bin";
             }
             else if (!strcmp(name, "00012"))
             {
@@ -952,12 +953,12 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                 }
 
                 memcpy(_12g_table, data2, _12gtable_size);
-                strcpy(szDataPath, "./F0/PSARDUMPER/12000_files_table.bin");
+                szDataPath = outdir + "/F0/PSARDUMPER/12000_files_table.bin";
             }
 
             else
             {
-                sprintf(szDataPath, "./F0/PSARDUMPER/%s", strrchr(name, '/') + 1);
+                szDataPath = outdir + "/F0/PSARDUMPER/" + (strrchr(name, '/') + 1);
             }
 
             printf("expanded");
@@ -995,14 +996,14 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                     }
                 }
 
-                if (WriteFile(szDataPath, data2, cbExpanded) != cbExpanded)
+                if (WriteFile(szDataPath.c_str(), data2, cbExpanded) != cbExpanded)
                 {
-                    printf("Cannot write %s.\n", szDataPath);
+                    printf("Cannot write %s.\n", szDataPath.c_str());
                     break;
                 }
 
                 printf(",saved");
-                CheckExtractReboot(name, mode, data2, cbExpanded, data1, data2);
+                CheckExtractReboot(name, mode, data2, cbExpanded, data1, data2, outdir);
             }
             if ((memcmp(data2, "~PSP", 4) == 0 || strncmp(name, "flash0:/kd/resource/me", 22) == 0) &&
                 (mode == MODE_DECRYPT))
@@ -1037,13 +1038,13 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                         }
                     }
 
-                    if (WriteFile(szDataPath, pbToSave, cbToSave) != cbToSave)
+                    if (WriteFile(szDataPath.c_str(), pbToSave, cbToSave) != cbToSave)
                     {
-                        printf("Error writing %s.\n", szDataPath);
+                        printf("Error writing %s.\n", szDataPath.c_str());
                     }
 
                     printf(",saved!");
-                    CheckExtractReboot(name, mode, pbToSave, cbToSave, data1, data2);
+                    CheckExtractReboot(name, mode, pbToSave, cbToSave, data1, data2, outdir);
                 }
                 else
                 {
@@ -1061,8 +1062,8 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                     printf(",decrypted IPL");
                     u32 addr;
                     int cb2 = pspLinearizeIPL2(data1, data2, cb1, &addr);
-                    sprintf(szDataPath, "./F0/PSARDUMPER/stage1_%s", szFileBase);
-                    if (cb2 > 0 && WriteFile(szDataPath, data2, cb2))
+                    szDataPath = outdir + "/F0/PSARDUMPER/stage1_" + szFileBase;
+                    if (cb2 > 0 && WriteFile(szDataPath.c_str(), data2, cb2))
                     {
                         printf(",linearized at %08x", addr);
                     }
@@ -1071,7 +1072,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size)
                         printf(",failed linearizing");
                     }
 
-                    if (decryptIPL(data2, cb2, intVersion, addr, szFileBase) != 0)
+                    if (decryptIPL(data2, cb2, intVersion, addr, szFileBase, outdir) != 0)
                     {
                         printf(",failed IPL stages decryption");
                     }
