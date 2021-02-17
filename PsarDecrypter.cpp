@@ -558,7 +558,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
 	#define mkdir(a,b) mkdir(a)
 #endif
 
-	mkdir((outdir).c_str(), 0777);
+    mkdir((outdir).c_str(), 0777);
     mkdir((outdir + "/F0").c_str(), 0777);
     mkdir((outdir + "/F0/PSARDUMPER").c_str(), 0777);
     mkdir((outdir + "/F0/data").c_str(), 0777);
