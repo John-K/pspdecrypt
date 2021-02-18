@@ -100,11 +100,12 @@ int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity);
  * @param buf1 - The input/output buffer
  * @param buf2 - Buffer for temporal use by the decoder
  * @param size - The size of input
+ * @param version - The PSAR version
  * @param mode - The mode
  *
  * @returns the size of the decrypted table on success, < 0 on error
 */
-int pspDecryptTable(u8 *buf1, u8 *buf2, int size, int mode);
+int pspDecryptTable(u8 *buf1, u8 *buf2, int size, int version, int mode);
 
 
 #endif

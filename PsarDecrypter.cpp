@@ -717,7 +717,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
 
             else if (!strcmp(name, "com:00000"))
             {
-                comtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                comtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (comtable_size <= 0)
                 {
@@ -735,7 +735,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
 
             else if (!strcmp(name, "01g:00000") || !strcmp(name, "00001"))
             {
-                _1gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _1gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_1gtable_size <= 0)
                 {
@@ -754,7 +754,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "02g:00000") || !strcmp(name, "00002"))
             {
-                _2gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _2gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_2gtable_size <= 0)
                 {
@@ -772,7 +772,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
 
             else if (!strcmp(name, "00003"))
             {
-                _3gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _3gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_3gtable_size <= 0)
                 {
@@ -791,7 +791,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00004"))
             {
-                _4gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _4gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_4gtable_size <= 0)
                 {
@@ -809,11 +809,11 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00005"))
             {
-                _5gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _5gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_5gtable_size <= 0)
                 {
-                    _5gtable_size = pspDecryptTable(data2, data1, cbExpanded, 5);
+                    _5gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, 5);
                     if (_5gtable_size <= 0)
                     {
                         printf("Cannot decrypt 5g table %08X [tag %08X].\n", _5gtable_size, (u32)*(u32_le*)&data2[0xD0]);
@@ -831,7 +831,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00006"))
             {
-                _6gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _6gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_6gtable_size <= 0)
                 {
@@ -849,7 +849,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00007"))
             {
-                _7gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _7gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_7gtable_size <= 0)
                 {
@@ -867,7 +867,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00008"))
             {
-                _8gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _8gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_8gtable_size <= 0)
                 {
@@ -885,7 +885,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00009"))
             {
-                _9gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _9gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_9gtable_size <= 0)
                 {
@@ -903,7 +903,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00010"))
             {
-                _10gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _10gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_10gtable_size <= 0)
                 {
@@ -921,7 +921,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00011"))
             {
-                _11gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _11gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_11gtable_size <= 0)
                 {
@@ -939,7 +939,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
             }
             else if (!strcmp(name, "00012"))
             {
-                _12gtable_size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                _12gtable_size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
 
                 if (_12gtable_size <= 0)
                 {
