@@ -12,10 +12,10 @@ int WriteFile(const char *file, void *buf, int size)
     return size;
 }
 
-s32 gunzip(u8 *inBuf, u32 inSize, u8 *outBuf, u32 outSize, u32 *realInSize)
+s32 gunzip(u8 *inBuf, u32 inSize, u8 *outBuf, u32 outSize, u32 *realInSize, bool noHeader)
 {
-    if (inBuf[0] != 0x1f || inBuf[1] != 0x8b) {
-        printf("invalid gzip!\n");
+    if (!noHeader && (inBuf[0] != 0x1f || inBuf[1] != 0x8b)) {
+        printf("Invalid gzip!\n");
         return -1;
     }
     z_stream infstream;
@@ -27,7 +27,11 @@ s32 gunzip(u8 *inBuf, u32 inSize, u8 *outBuf, u32 outSize, u32 *realInSize)
     infstream.avail_out = outSize;
     infstream.next_out = outBuf;
 
-    inflateInit2(&infstream, 16+MAX_WBITS);
+    if (noHeader) {
+        inflateInit(&infstream);
+    } else {
+        inflateInit2(&infstream, 16+MAX_WBITS);
+    }
     if (inflate(&infstream, Z_NO_FLUSH) != Z_STREAM_END) {
         inflateEnd(&infstream);
         return -1;
