@@ -48,15 +48,6 @@ static int OVERHEAD;
 int iBase, cbChunk, psarVersion;
 int decrypted;
 
-enum
-{
-    MODE_ENCRYPT_SIGCHECK,
-    MODE_ENCRYPT,
-    MODE_DECRYPT,
-};
-
-int mode = MODE_DECRYPT;
-
 // File tables, com = offset 0, then 01g = offset 1, etc.
 std::array<std::vector<char>, 13> g_tables;
 
@@ -138,7 +129,7 @@ static int FindReboot(u8 *input, u8 *output, int size)
     return -1;
 }
 
-static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, const char *reboot, const char *rebootname, u8 *data1, u8 *data2)
+static void ExtractReboot(u8 *loadexec_data, int loadexec_data_size, const char *reboot, const char *rebootname, u8 *data1, u8 *data2, bool extractOnly)
 {
     int s = loadexec_data_size;
     memcpy(data1, loadexec_data, loadexec_data_size);
@@ -155,12 +146,22 @@ static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, c
         return;
     }
 
+    if (extractOnly) {
+        if (WriteFile(reboot, data2, s) != s) {
+            printf("Cannot write %s.\n", reboot);
+            return;
+        }
+        printf(",saved.");
+        return;
+    }
+
     s = pspDecryptPRX(data2, data1, s);
     if (s <= 0)
     {
         printf("Cannot decrypt %s.\n", rebootname);
         return;
     }
+    printf(",decrypted");
 
     WriteFile(reboot, data1, s);
 
@@ -180,15 +181,15 @@ static void ExtractReboot(int mode, u8 *loadexec_data, int loadexec_data_size, c
     printf(",done.");
 }
 
-static void CheckExtractReboot(const char *name, int mode, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2, std::string outdir) {
+static void CheckExtractReboot(const char *name, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2, std::string outdir, bool extractOnly) {
     if (strcmp(name, "flash0:/kd/loadexec.prx") == 0) {
-        ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/PSARDUMPER/reboot.bin").c_str(), "reboot.bin", data1, data2);
+        ExtractReboot(pbToSave, cbToSave, (outdir + "/PSARDUMPER/reboot.bin").c_str(), "reboot.bin", data1, data2, extractOnly);
     } else if (strncmp(name, "flash0:/kd/loadexec_", strlen("flash0:/kd/loadexec_")) == 0) {
         if (strlen(name) == strlen("flash0:/kd/loadexec_00g.prx")) {
             std::string filename = "reboot_00g.bin";
             filename[strlen("reboot_")] = name[strlen("flash0:/kd/loadexec_")];
             filename[strlen("reboot_") + 1] = name[strlen("flash0:/kd/loadexec_") + 1];
-            ExtractReboot(mode, pbToSave, cbToSave, (outdir + "/PSARDUMPER/" + filename).c_str(), filename.c_str(), data1, data2);
+            ExtractReboot(pbToSave, cbToSave, (outdir + "/PSARDUMPER/" + filename).c_str(), filename.c_str(), data1, data2, extractOnly);
         }
     }
 }
@@ -445,7 +446,7 @@ void makeDirs(std::string filename)
     }
 }
 
-int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
+int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly, bool verbose)
 {
     kirk_init();
     if (memcmp(dataPSAR, "PSAR", 4) != 0) {
@@ -604,14 +605,10 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
         {
             printf("expanded");
 
-            if (signcheck && mode == MODE_ENCRYPT_SIGCHECK
-              && (strncmp(name, "flash0:/kd/loadexec", strlen("flash0:/kd/loadexec")) != 0)) {
-                pspSignCheck(data2);
-            }
-
-            if ((mode != MODE_DECRYPT) || (memcmp(data2, "~PSP", 4) != 0))
+            // If we don't decrypt modules, or for non-encrypted modules
+            if (extractOnly || (memcmp(data2, "~PSP", 4) != 0))
             {
-                if (strncmp(name, "ipl:", 4) == 0 && *(u32*)(data2 + 0x60) != 1)
+                if (!extractOnly && strncmp(name, "ipl:", 4) == 0 && *(u32*)(data2 + 0x60) != 1)
                 {
                     // IPL Pre-decryption
                     cbExpanded = pspDecryptPRX(data2, data1, cbExpanded);
@@ -634,10 +631,12 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
 
                 printf(",saved");
-                CheckExtractReboot(name, mode, data2, cbExpanded, data1, data2, outdir);
+                CheckExtractReboot(name, data2, cbExpanded, data1, data2, outdir, extractOnly);
             }
+
+            // For encrypted ~PSP modules, or ME images, if decrypting is not disabled
             if ((memcmp(data2, "~PSP", 4) == 0 || strncmp(name, "flash0:/kd/resource/me", strlen("flash0:/kd/resource/me")) == 0) &&
-                (mode == MODE_DECRYPT))
+                !extractOnly)
             {
                 int cbDecrypted = pspDecryptPRX(data2, data1, cbExpanded);
 
@@ -663,9 +662,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                         }
                         else
                         {
-                            printf(",decompress error");
-                            //printf("Decompress error 0x%08X\n"
-                            //       "File will be written compressed.\n", cbExp);
+                            printf(",decompress error %d", cbExp);
                         }
                     }
 
@@ -675,7 +672,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                     }
 
                     printf(",saved!");
-                    CheckExtractReboot(name, mode, pbToSave, cbToSave, data1, data2, outdir);
+                    CheckExtractReboot(name, pbToSave, cbToSave, data1, data2, outdir, extractOnly);
                 }
                 else
                 {
@@ -685,33 +682,9 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir)
                 }
             }
 
-            else if (strncmp(name, "ipl:", 4) == 0)
+            else if (strncmp(name, "ipl:", 4) == 0 && !extractOnly)
             {
-                int cb1 = pspDecryptIPL1(data2, data1, cbExpanded);
-                if (cb1 > 0)
-                {
-                    printf(",decrypted IPL");
-                    u32 addr;
-                    int cb2 = pspLinearizeIPL2(data1, data2, cb1, &addr);
-                    szDataPath = outdir + "/PSARDUMPER/stage1_" + szFileBase;
-                    if (cb2 > 0 && WriteFile(szDataPath.c_str(), data2, cb2))
-                    {
-                        printf(",linearized at %08x", addr);
-                    }
-                    else
-                    {
-                        printf(",failed linearizing");
-                    }
-
-                    if (decryptIPL(data2, cb2, intVersion, addr, szFileBase, outdir) != 0)
-                    {
-                        printf(",failed IPL stages decryption");
-                    }
-                }
-                else
-                {
-                    printf(",failed decrypting IPL");
-                }
+                decryptIPL(data2, cbExpanded, intVersion, szFileBase, outdir);
             }
         }
         else

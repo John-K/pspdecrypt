@@ -1,18 +1,8 @@
 #ifndef __PSPDECRYPT_H__
 #define __PSPDECRYPT_H__
 
+#include <string>
 #include "CommonTypes.h"
-
-/**
- * Decrypts a PRX or a buffer with similar encryption
- *
- * @param inbuf - The input buffer
- * @param outbuf - The buffer that receives the decoded data
- * @param size - The size of input
- *
- * @returns the size of the decrypted data on success, < 0 on error
-*/
-//int pspDecryptPRX(u8 *inbuf, u8 *outbuf, u32 size);
 
 /**
  * Sign checks a buffer
@@ -73,6 +63,8 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr);
  * @returns the size of the decrypted payload on success, 0 on error
 */
 int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn);
+
+int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir);
 
 /**
  * Checks if buffer is compressed

@@ -140,12 +140,12 @@ int main(int argc, char *argv[]) {
                 }
                 if (psarOff < size) {
                     cout << "Extracting PSAR to " << outDir << endl;
-                    pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir);
+                    pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, verbose);
                 }
             }
             break;
         case PSAR_MAGIC:
-            pspDecryptPSAR((u8*)inData, size, outDir);
+            pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, verbose);
             break;
         case ELF_MAGIC:
             cout << "Non-encrypted file, copying to " << outFile << endl;

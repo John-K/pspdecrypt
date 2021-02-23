@@ -509,7 +509,7 @@ int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn)
 }
 
 // Decompress/unscramble IPL stages 2 & 3 and kernel keys
-int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir)
+int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir)
 {
     if (debug) {
         printf("Version %d\n", version);
@@ -551,10 +551,10 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
                 if (debug) {
                     printf("decompressed %d bytes\n", decSize);
                 }
-                szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename) + ".gz" ;
+                szDataPath = outdir + "/PSARDUMPER/stage2_" + std::string(filename) + ".gz" ;
                 WriteFile(szDataPath.c_str(), (u8*)inData+gzip_addr-loadAddr, realInSize);
 
-                szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename);
+                szDataPath = outdir + "/PSARDUMPER/stage2_" + std::string(filename);
                 WriteFile(szDataPath.c_str(), decBuf, decSize);
                 printf(",stage2 decompressed");
                 decSize = pspDecryptIPL3((u8*)inData+img2_addr-loadAddr, outBuf, inDataSize - (img2_addr-loadAddr));
@@ -562,7 +562,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
                     printf("Failed decrypting stage3!\n");
                 } else {
                     printf(",stage3 decrypted");
-                    szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename);
+                    szDataPath = outdir + "/PSARDUMPER/stage3_" + std::string(filename);
                     WriteFile(szDataPath.c_str(), outBuf, decSize);
                     if (debug) {
                         printf("decrypted %d bytes\n", decSize);
@@ -703,10 +703,10 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
     if (debug) {
         printf("decompressed %d bytes\n", decSize);
     }
-    szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename) + ".gz";
+    szDataPath = outdir + "/PSARDUMPER/stage2_" + std::string(filename) + ".gz";
     WriteFile(szDataPath.c_str(), (u8*)inData+img_off-loadAddr, realInSize);
 
-    szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename);
+    szDataPath = outdir + "/PSARDUMPER/stage2_" + std::string(filename);
     WriteFile(szDataPath.c_str(), decBuf, decSize);
     printf(",stage2 unscrambled & decompressed");
 
@@ -807,7 +807,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
             printf("Failed decrypting kernel keys!\n");
         } else {
             printf(",kernel keys decrypted");
-            szDataPath = outdir + "/F0/PSARDUMPER/kkeys_" + std::string(filename);
+            szDataPath = outdir + "/PSARDUMPER/kkeys_" + std::string(filename);
             WriteFile(szDataPath.c_str(), outBuf, decSize);
         }
     }
@@ -833,15 +833,15 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
             if (debug) {
                 printf("decompressed %d bytes\n", decompSize);
             }
-            szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename)+ ".gz";
+            szDataPath = outdir + "/PSARDUMPER/stage3_" + std::string(filename)+ ".gz";
             WriteFile(szDataPath.c_str(), outBuf, realInSize);
 
-            szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename);
+            szDataPath = outdir + "/PSARDUMPER/stage3_" + std::string(filename);
             WriteFile(szDataPath.c_str(), decBuf, decompSize);
             printf(",stage3 decrypted & decompressed");
         } else {
             printf(",stage3 decrypted");
-            szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename);
+            szDataPath = outdir + "/PSARDUMPER/stage3_" + std::string(filename);
             WriteFile(szDataPath.c_str(), outBuf, decSize);
         }
     }

@@ -14,6 +14,7 @@ extern "C" {
 }
 #include "pspdecrypt_lib.h"
 #include "PrxDecrypter.h"
+#include "ipl_decrypt.h"
 #include "common.h"
 
 ////////// SignCheck //////////
@@ -276,6 +277,41 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr)
     }
 
     return cbOut;
+}
+
+int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir)
+{
+    u8 *tmpData = new u8[inDataSize];
+    int cb1 = pspDecryptIPL1(inData, tmpData, inDataSize);
+    if (cb1 > 0)
+    {
+        printf(",decrypted IPL");
+        u32 addr;
+        int cb2 = pspLinearizeIPL2(tmpData, inData, cb1, &addr);
+        std::string szDataPath = outdir + "/PSARDUMPER/stage1_" + filename;
+        if (cb2 > 0 && WriteFile(szDataPath.c_str(), inData, cb2))
+        {
+            printf(",linearized at %08x", addr);
+        }
+        else
+        {
+            printf(",failed linearizing");
+            return -1;
+        }
+
+        if (extractIPLStages(inData, cb2, version, addr, filename, outdir) != 0)
+        {
+            printf(",failed IPL stages decryption");
+            return -2;
+        }
+    }
+    else
+    {
+        printf(",failed decrypting IPL");
+        return -3;
+    }
+
+    return 0;
 }
 
 ////////// Decompression //////////
