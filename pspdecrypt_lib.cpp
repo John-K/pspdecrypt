@@ -389,18 +389,25 @@ static void DecryptT(u8 *buf, int size, int mode)
     DES_cbc_encrypt(buf, buf, size, &schedule, (DES_cblock*)&table_keys[mode].iv, DES_DECRYPT);
 }
 
-int pspDecryptTable(u8 *buf1, u8 *buf2, int size, int mode)
+int pspDecryptTable(u8 *buf1, u8 *buf2, int size, int psarVersion, int mode)
 {
 	int retsize;
 
-	if (buf1 != buf2) memcpy(buf2, buf1, size);
+	if (buf1 != buf2) {
+	    memcpy(buf2, buf1, size);
+	}
 
 	DecryptT(buf2, size, mode);
 
-	retsize = pspDecryptPRX(buf2, buf1, size);
-	if (retsize < 0)
-	{	
-	    retsize = -1;
+	if (psarVersion == 4) {
+	    memcpy(buf1, buf2, size);
+	    retsize = size;
+	} else {
+	    retsize = pspDecryptPRX(buf2, buf1, size);
+	    if (retsize < 0)
+	    {	
+	        retsize = -1;
+	    }
 	}
 
 	return retsize;

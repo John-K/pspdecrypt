@@ -580,7 +580,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
         } else {
             for (auto &tableName : g_tableFilenames) {
                 if (!strncmp(name, tableName.first.data(), tableName.first.size())) {
-                    int size = pspDecryptTable(data2, data1, cbExpanded, table_mode);
+                    int size = pspDecryptTable(data2, data1, cbExpanded, psarVersion, table_mode);
                     g_tables[tableName.second].resize(size);
                     memcpy(g_tables[tableName.second].data(), data2, size);
                     szDataPath = outdir + "/PSARDUMPER/";
