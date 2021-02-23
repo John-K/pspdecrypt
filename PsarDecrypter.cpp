@@ -435,7 +435,7 @@ static int is5Dnum(char *str)
 	#define mkdir(a,b) mkdir(a)
 #endif
 
-void makeDirs(std::string filename)
+void makeDirs(std::string filename, bool isDir)
 {
     for (size_t i = 0; i < filename.size(); i++) {
         if (filename[i] == '/') {
@@ -443,6 +443,9 @@ void makeDirs(std::string filename)
             mkdir(filename.c_str(), 0777);
             filename[i] = '/';
         }
+    }
+    if (isDir) {
+        mkdir(filename.c_str(), 0777);
     }
 }
 
@@ -571,11 +574,11 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
 
         if (!strncmp(name, "flash0:/", 8)) {
             szDataPath = outdir + "/F0/" + (name + 8);
-            makeDirs(szDataPath);
+            makeDirs(szDataPath, cbExpanded == 0);
             found = 1;
         } else if (!strncmp(name, "flash1:/", 8)) {
             szDataPath = outdir + "/F1/" + (name + 8);
-            makeDirs(szDataPath);
+            makeDirs(szDataPath, cbExpanded == 0);
             found = 1;
         } else {
             for (auto &tableName : g_tableFilenames) {
