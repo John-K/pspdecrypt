@@ -282,13 +282,14 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr)
 int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir)
 {
     u8 *tmpData = new u8[inDataSize];
+    kirk_init();
     int cb1 = pspDecryptIPL1(inData, tmpData, inDataSize);
     if (cb1 > 0)
     {
         printf(",decrypted IPL");
         u32 addr;
         int cb2 = pspLinearizeIPL2(tmpData, inData, cb1, &addr);
-        std::string szDataPath = outdir + "/PSARDUMPER/stage1_" + filename;
+        std::string szDataPath = outdir + "/stage1_" + filename;
         if (cb2 > 0 && WriteFile(szDataPath.c_str(), inData, cb2))
         {
             printf(",linearized at %08x", addr);

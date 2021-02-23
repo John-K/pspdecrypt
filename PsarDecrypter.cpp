@@ -684,7 +684,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
 
             else if (strncmp(name, "ipl:", 4) == 0 && !extractOnly)
             {
-                decryptIPL(data2, cbExpanded, intVersion, szFileBase, outdir);
+                decryptIPL(data2, cbExpanded, intVersion, szFileBase, outdir + "/PSARDUMPER");
             }
         }
         else
