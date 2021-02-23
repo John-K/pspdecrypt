@@ -279,10 +279,11 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr)
     return cbOut;
 }
 
-int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir)
+int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir, u8 *preipl, u32 preiplSize, bool verbose)
 {
     u8 *tmpData = new u8[inDataSize];
     kirk_init();
+
     int cb1 = pspDecryptIPL1(inData, tmpData, inDataSize);
     if (cb1 > 0)
     {
@@ -300,7 +301,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, st
             return -1;
         }
 
-        if (extractIPLStages(inData, cb2, version, addr, filename, outdir) != 0)
+        if (extractIPLStages(inData, cb2, version, addr, filename, outdir, preipl, preiplSize, verbose) != 0)
         {
             printf(",failed IPL stages decryption");
             return -2;
@@ -311,6 +312,8 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, st
         printf(",failed decrypting IPL");
         return -3;
     }
+
+    delete []tmpData;
 
     return 0;
 }

@@ -446,7 +446,7 @@ void makeDirs(std::string filename)
     }
 }
 
-int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly, bool verbose)
+int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly, u8 *preipl, u32 preiplSize, bool verbose)
 {
     kirk_init();
     if (memcmp(dataPSAR, "PSAR", 4) != 0) {
@@ -684,7 +684,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
 
             else if (strncmp(name, "ipl:", 4) == 0 && !extractOnly)
             {
-                decryptIPL(data2, cbExpanded, intVersion, szFileBase, outdir + "/PSARDUMPER");
+                decryptIPL(data2, cbExpanded, intVersion, szFileBase, outdir + "/PSARDUMPER", preipl, preiplSize, verbose);
             }
         }
         else

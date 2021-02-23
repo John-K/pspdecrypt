@@ -64,7 +64,7 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr);
 */
 int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn);
 
-int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir);
+int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir, u8 *preipl, u32 preiplSize, bool verbose);
 
 /**
  * Checks if buffer is compressed

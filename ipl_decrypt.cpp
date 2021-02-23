@@ -13,18 +13,9 @@ extern "C" {
 #include "libkirk/kirk_engine.h"
 }
 
-/*
-// Add this if you want to compute the keys yourself!
-#include "preipl.h"
-#define PREIPL
-// Note that the size to specify for testing tools is 704 although in theory it's 4096.
-// It's 704 for devkit too (size of the random blob they put in memory before running the IPL)
-#define PREIPL_SIZE 4096
-*/
-
 #define max(a, b) ((a) < (b) ? (b) : (a))
 
-const bool debug = false;
+bool g_debug = false;
 
 // 3.80+ use a custom Sha256 (with different initialization constants and the output truncated to 28 bytes), in part1 only
 int g_customSha = 0;
@@ -379,7 +370,7 @@ void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encrypt
         memcpy(hash, g_precompKey.data(), 32);
     } else {
         scrambleBuf((u8*)unk1, 64, (u8*)preipl, preiplSize, (u8*)hash);
-        if (preipl != NULL && debug) {
+        if (preipl != NULL && g_debug) {
             printf("using hash = {0x%08x, {", *(u32*)unk1);
             for (s32 i = 0; i < 8; i++) {
                 printf("0x%08x", hash[i]);
@@ -441,46 +432,35 @@ void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encrypt
     // in 3.30+, here ctx, buf1 and buf2 are memset to 0
 }
 
-#ifdef PREIPL
 // for 3.30+ part1
-void decrypt330(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encryptedImg, s32 encryptedSize) // at 0x040F1018 in 3.30 part1
+void decrypt330(u32 *preipl, u32 preiplSize, void *unk1, void *unk2, void *encryptedImg, s32 encryptedSize, u32 realPreiplSize) // at 0x040F1018 in 3.30 part1
 {
-    // stack size: 6656
-    u8 buf1[32]; // sp
-    SceKernelUtilsMt19937Context ctx; // sp + 32..sp+2532
-    u32 buf2[1024]; // sp+2544
-    //u32 *alignedPreipl = (u32*)(preipl & 0xFFFFFF00); // we're not sure if our preipl buffer is aligned here
-    u32 *alignedPreipl = (u32*)preipl;
+    u8 buf1[32];
+    SceKernelUtilsMt19937Context ctx;
+    u32 buf2[1024];
     memset(buf1, 0, 32); // in 3.80+ only
-    //mt19937Init(&ctx, (u32)preipl); // we want to use the actual memory address of the preipl, not the address on the host
     mt19937Init(&ctx, 0xBFC00040);
-    // 107C
-    for (s32 i = 0; i < PREIPL_SIZE / 4; i++) {
-        buf2[i] = alignedPreipl[i] + mt19937UInt(&ctx);
+    for (s32 i = 0; i < realPreiplSize / 4; i++) {
+        buf2[i] = preipl[i] + mt19937UInt(&ctx);
     }
-    scrambleBuf(g_newKey, preiplSize, (u8*)buf2, PREIPL_SIZE, buf1);
+    scrambleBuf(g_newKey, preiplSize, (u8*)buf2, realPreiplSize, buf1);
     memset(buf2, 0, 4096);
     memset(&ctx, 0, 2500);
     // Note the checksum part does not exist for testing tools since it only allows one preipl format (but the XOR doesn't seem to be triggered anyway)
     u8 checksum = 0;
-    // 10F0
     for (s32 i = 0; i < 32; i++) {
         checksum = (checksum + buf1[i]) & 0xFF;
     }
-    if (debug) {
+    if (g_debug) {
         printf("checksum %02x vs %02x\n", g_checksum, checksum);
     }
     if (g_checksum == checksum) {
-        // 1164
-        // 1170
         for (s32 i = 0; i < 32; i++) {
             buf1[i] ^= g_xorKey[i];
         }
     }
-    // 111C
     decrypt(buf1, 32, unk1, unk2, encryptedImg, encryptedSize);
 }
-#endif
 
 s32 sha256Digest(u8 *data, u32 size, u8 *digest) // at 0x040F12CC 
 {
@@ -509,9 +489,10 @@ int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn)
 }
 
 // Decompress/unscramble IPL stages 2 & 3 and kernel keys
-int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir)
+int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir, u8 *preipl_bin, u32 preiplSize, bool verbose)
 {
-    if (debug) {
+    g_debug = verbose;
+    if (g_debug) {
         printf("Version %d\n", version);
     }
     g_customSha = g_useSfmt = g_emptyRound = g_usePrecomp = 0;
@@ -538,7 +519,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
             u32 gzip_lo = *(u32*)(inData + off + 4);
             if (gzip_hi >> 16 == 0x3C06 && gzip_lo >> 16 == 0x24C6) { // lui $a2, x & addiu $a2, $a2, x
                 u32 gzip_addr = (gzip_hi << 16) + (s16)(gzip_lo & 0xFFFF);
-                if (debug) {
+                if (g_debug) {
                     printf("Decompressing zip at %08x\n", gzip_addr);
                 }
                 u32 realInSize;
@@ -548,7 +529,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
                     printf("Failed decompressing stage2!\n");
                     return 1;
                 }
-                if (debug) {
+                if (g_debug) {
                     printf("decompressed %d bytes\n", decSize);
                 }
                 szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz" ;
@@ -564,7 +545,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
                     printf(",stage3 decrypted");
                     szDataPath = outdir + "/stage3_" + std::string(filename);
                     WriteFile(szDataPath.c_str(), outBuf, decSize);
-                    if (debug) {
+                    if (g_debug) {
                         printf("decrypted %d bytes\n", decSize);
                     }
                 }
@@ -620,7 +601,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
     if (version >= 505) {
         g_useSfmt = 1;
     }
-    if (debug) {
+    if (g_debug) {
         printf("keys at %08x, %08x, img at %08x, size %08x\n", key1_off, key2_off, img_off, img_size);
     }
     if (key1_off == 0 || key2_off == 0 || img_off == 0 || img_size == 0) {
@@ -656,7 +637,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
                 g_newKey = (u8*)inData+addr-loadAddr;
                 g_xorKey = (u8*)inData+addr-loadAddr+0x300;
                 g_checksum = inData[addr-loadAddr+0x320];
-                if (debug) {
+                if (g_debug) {
                     printf("key2 is %08x, %08x, %02x\n", addr, addr+0x300, g_checksum);
                 }
                 break;
@@ -670,26 +651,26 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
     u32 key_idx = *(u32*)(inData+key1_off-loadAddr);
     auto precompKeyIt = g_keys.find(key_idx);
     if (precompKeyIt != g_keys.end()) {
-        if (debug) {
+        if (g_debug) {
             printf("found key %08x %08x...\n", precompKeyIt->second[0], precompKeyIt->second[1]);
         }
         g_usePrecomp = 1;
         g_precompKey = precompKeyIt->second;
         decrypt(NULL, 0, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function
     } else {
-#ifdef PREIPL
-        if (version >= 330) {
-            decrypt330(preipl_bin, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function // 3.30+
+        if (preipl_bin != nullptr) {
+            if (version >= 330) {
+                decrypt330((u32*)preipl_bin, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size, preiplSize); // decrypt function // 3.30+
+            } else {
+                decrypt(preipl_bin + 0x40, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function
+            }
         } else {
-            decrypt(preipl_bin + 0x40, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function
+            if (g_debug) {
+                printf("No preipl provided and key not found, aborting\n");
+            }
+            printf(",no key found");
+            return 1;
         }
-#else
-        if (debug) {
-            printf("No preipl provided and key not found, aborting\n");
-        }
-        printf(",no key found");
-        return 1;
-#endif
     }
     g_usePrecomp = 0;
 
@@ -700,7 +681,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
         printf("Failed unscrambling or decompressing stage2!\n");
         return 1;
     }
-    if (debug) {
+    if (g_debug) {
         printf("decompressed %d bytes\n", decSize);
     }
     szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz";
@@ -768,7 +749,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
             return 1;
         }
     }
-    if (debug) {
+    if (g_debug) {
         printf("part2 key offs %08x, %08x, size %08x, img2 at %08x\n", key3_addr, key4_addr, img2_size, img2_addr);
     }
 
@@ -798,7 +779,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
         g_useSfmt = 1;
     }
     if (key5_addr != 0 && key6_addr != 0) {
-        if (debug) {
+        if (g_debug) {
             printf("decrypting kernel key at %08x using keys at %08x, %08x\n", kernelKeys_addr, key5_addr, key6_addr);
         }
         decrypt(NULL, 0, decBuf+key5_addr-part2LoadAddr, decBuf+key6_addr-part2LoadAddr, inData+kernelKeys_addr-loadAddr, 256);
@@ -820,7 +801,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
     if (!decSize) {
         printf("Failed decrypting stage3!\n");
     } else {
-        if (debug) {
+        if (g_debug) {
             printf("decrypted %d bytes\n", decSize);
         }
         if (outBuf[0] == 0x1f && outBuf[1] == 0x8b) {
@@ -830,7 +811,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
                 printf("Failed decompressing stage3!\n");
                 return 1;
             }
-            if (debug) {
+            if (g_debug) {
                 printf("decompressed %d bytes\n", decompSize);
             }
             szDataPath = outdir + "/stage3_" + std::string(filename)+ ".gz";

@@ -16,6 +16,8 @@ static const u32 PSP_MAGIC  = 0x5053507E;
 static const u32 PSAR_MAGIC = 0x52415350;
 static const u32 PBP_MAGIC  = 0x50425000;
 
+static const u32 MAX_PREIPL_SIZE = 0x1000;
+
 void help(const char* exeName) {
     cout << "Usage: " << exeName << " [OPTION]... [FILE]" << endl;
     cout << endl;
@@ -54,6 +56,9 @@ int main(int argc, char *argv[]) {
     string outDir = ".";
     string outFile = "";
     string preipl = "";
+    bool preiplSet = false;
+    u8 preiplBuf[MAX_PREIPL_SIZE];
+    u32 preiplSize = 0;
     bool verbose = false;
     bool extractOnly = false;
     bool iplDecrypt = false;
@@ -81,6 +86,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'p':
                 preipl = string(optarg);
+                preiplSet = true;
                 break;
             case 'V':
                 version = atoi(optarg);
@@ -124,13 +130,30 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    if (preiplSet) {
+        ifstream preiplFile (preipl, ios::in|ios::binary|ios::ate);
+        if (!preiplFile.is_open()) {
+            cerr << "Could not open " << preipl << "!" << endl;
+            return 1;
+        }
+
+        preiplSize = preiplFile.tellg();
+        if (preiplSize > MAX_PREIPL_SIZE) {
+            cerr << "Preipl file too big!" << endl;
+            return 1;
+        }
+        preiplFile.seekg(0, ios::beg);
+        preiplFile.read((char*)preiplBuf, preiplSize);
+        preiplFile.close();
+    }
+
     if (iplDecrypt) {
         if (version < 0) {
             cerr << "You need to set --version to extract later stages of a standalone IPL." << endl;
             return 1;
         }
         cout << "Decrypting standalone IPL";
-        if (decryptIPL((u8*)inData, size, version, "ipl", outDir) < 0) {
+        if (decryptIPL((u8*)inData, size, version, "ipl", outDir, preiplSet ? preiplBuf : nullptr, preiplSize, verbose) < 0) {
             cerr << endl << "Failed!" << endl;
             return 1;
         }
@@ -159,12 +182,12 @@ int main(int argc, char *argv[]) {
                     }
                     if (psarOff < size) {
                         cout << "Extracting PSAR to " << outDir << endl;
-                        pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, verbose);
+                        pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose);
                     }
                 }
                 break;
             case PSAR_MAGIC:
-                pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, verbose);
+                pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose);
                 break;
             case ELF_MAGIC:
                 cout << "Non-encrypted file, copying to " << outFile << endl;
