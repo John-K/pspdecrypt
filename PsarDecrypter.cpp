@@ -539,7 +539,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
 
         else if (!strncmp(name, "com:", 4) && g_tables[0].size() > 0)
         {
-            if (!FindTablePath(g_tables[0].data(), g_tables[1].size(), name+4, name))
+            if (!FindTablePath(g_tables[0].data(), g_tables[0].size(), name+4, name))
             {
                 printf("Part 2 Error: cannot find path of %s.\n", name);
                 continue;
