@@ -32,6 +32,9 @@ void help(const char* exeName) {
     cout << "  -o, --outfile=FILE output file for the decrypted binary (default: [FILE.PSP].dec)" << endl;
     cout << "PSAR(/PBP)-only options:" << endl;
     cout << "  -e, --extract-only do not decrypt files contained in the PSAR" << endl;
+    cout << "PBP-only options:" << endl;
+    cout << "  -P, --psp-only     only extract/decrypt the .PSP executable file of the PBP" << endl;
+    cout << "  -A, --psar-only    only extract/decrypt the .PSAR updater file of the PBP" << endl;
     cout << "IPL decryption & PSAR(/PBP) options:" << endl;
     cout << "  -O, --outdir=DIR   output path for the PSAR's or IPL's contents (default: current directory)" << endl;
     cout << "  -i, --ipl-decrypt  decrypt the IPL given as an argument" << endl;
@@ -51,6 +54,8 @@ int main(int argc, char *argv[]) {
         {"preipl",       required_argument, 0, 'p'},
         {"version",      required_argument, 0, 'V'},
         {"info",         no_argument,       0, 'I'},
+        {"psar-only",    no_argument,       0, 'A'},
+        {"psp-only",     no_argument,       0, 'P'},
         {0,              0,                 0,  0 }
     };
     int long_index;
@@ -66,10 +71,12 @@ int main(int argc, char *argv[]) {
     bool extractOnly = false;
     bool iplDecrypt = false;
     bool infoOnly = false;
+    bool pspOnly = false;
+    bool psarOnly = false;
     int version = -1;
     int c = 0;
     cout << showbase << internal << setfill('0');
-    while ((c = getopt_long(argc, argv, "hvo:eO:ip:V:I", long_options, &long_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hvo:eO:ip:V:IAP", long_options, &long_index)) != -1) {
         switch (c) {
             case 'h':
                 help(argv[0]);
@@ -98,6 +105,12 @@ int main(int argc, char *argv[]) {
                 break;
             case 'I':
                 infoOnly = true;
+                break;
+            case 'A':
+                psarOnly = true;
+                break;
+            case 'P':
+                pspOnly = true;
                 break;
             default:
                 help(argv[0]);
@@ -187,7 +200,7 @@ int main(int argc, char *argv[]) {
                     if (infoOnly) {
                         cout << "Input is a PBP with:" << endl;
                     }
-                    if (pspOff < size) {
+                    if (pspOff < size && !psarOnly) {
                         if (*(u32*)&inData[pspOff] == ELF_MAGIC) {
                             if (infoOnly) {
                                 cout << "- an unencrypted PSP (ELF) file" << endl;
@@ -205,7 +218,7 @@ int main(int argc, char *argv[]) {
                             }
                         }
                     }
-                    if (psarOff < size) {
+                    if (psarOff < size && !pspOnly) {
                         if (infoOnly) {
                             cout << "- a PSAR with the following characteristics:" << endl;
                         } else {
