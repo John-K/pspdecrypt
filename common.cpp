@@ -32,7 +32,9 @@ s32 gunzip(u8 *inBuf, u32 inSize, u8 *outBuf, u32 outSize, u32 *realInSize, bool
     } else {
         inflateInit2(&infstream, 16+MAX_WBITS);
     }
-    if (inflate(&infstream, Z_NO_FLUSH) != Z_STREAM_END) {
+    int ret;
+    ret = inflate(&infstream, Z_NO_FLUSH);
+    if (ret != Z_STREAM_END && ret != Z_OK) {
         inflateEnd(&infstream);
         return -1;
     }

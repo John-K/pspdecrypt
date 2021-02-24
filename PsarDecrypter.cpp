@@ -505,6 +505,10 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
         int signcheck;
 
         int res = pspPSARGetNextFile(dataPSAR, size, data1, data2, name, &cbExpanded, &pos, &signcheck);
+        if (res < 0) {
+            printf("Error when decrypting PSAR block!\n");
+            return 1;
+        }
 
         if (res == 0) /* no more files */
         {
