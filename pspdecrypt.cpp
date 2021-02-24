@@ -26,6 +26,7 @@ void help(const char* exeName) {
     cout << "Can also take PBP files as an input, or IPL binaries if the option is given." << endl;
     cout << endl;
     cout << "General options:" << endl;
+    cout << "  -h, --help         display this help and exit" << endl;
     cout << "  -v, --verbose      enable verbose mode (mostly for debugging)" << endl;
     cout << "  -i, --info         display information about the input file and exit" << endl;
     cout << "PSP(/PBP)-only options:" << endl;
