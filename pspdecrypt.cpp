@@ -1,6 +1,7 @@
 #include <libgen.h>
 #include <cstdio>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <string.h>
@@ -26,6 +27,7 @@ void help(const char* exeName) {
     cout << endl;
     cout << "General options:" << endl;
     cout << "  -v, --verbose      enable verbose mode (mostly for debugging)" << endl;
+    cout << "  -i, --info         display information about the input file and exit" << endl;
     cout << "PSP(/PBP)-only options:" << endl;
     cout << "  -o, --outfile=FILE output file for the decrypted binary (default: [FILE.PSP].dec)" << endl;
     cout << "PSAR(/PBP)-only options:" << endl;
@@ -48,6 +50,7 @@ int main(int argc, char *argv[]) {
         {"ipl-decrypt",  no_argument,       0, 'i'},
         {"preipl",       required_argument, 0, 'p'},
         {"version",      required_argument, 0, 'V'},
+        {"info",         no_argument,       0, 'I'},
         {0,              0,                 0,  0 }
     };
     int long_index;
@@ -62,9 +65,11 @@ int main(int argc, char *argv[]) {
     bool verbose = false;
     bool extractOnly = false;
     bool iplDecrypt = false;
+    bool infoOnly = false;
     int version = -1;
     int c = 0;
-    while ((c = getopt_long(argc, argv, "hvo:eO:ip:V:", long_options, &long_index)) != -1) {
+    cout << showbase << internal << setfill('0');
+    while ((c = getopt_long(argc, argv, "hvo:eO:ip:V:I", long_options, &long_index)) != -1) {
         switch (c) {
             case 'h':
                 help(argv[0]);
@@ -90,6 +95,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'V':
                 version = atoi(optarg);
+                break;
+            case 'I':
+                infoOnly = true;
                 break;
             default:
                 help(argv[0]);
@@ -148,6 +156,10 @@ int main(int argc, char *argv[]) {
     }
 
     if (iplDecrypt) {
+        if (infoOnly) {
+            cerr << "No info to display for IPL..." << endl;
+            return 1;
+        }
         if (version < 0) {
             cerr << "You need to set --version to extract later stages of a standalone IPL." << endl;
             return 1;
@@ -161,7 +173,9 @@ int main(int argc, char *argv[]) {
     } else {
         switch (*(u32*)inData) {
             case PSP_MAGIC:
-                {
+                if (infoOnly) {
+                    cout << "Input is an encrypted PSP executable encrypted with tag " << hex << setw(8) << *(u32*)&inData[0xD0] << endl;
+                } else {
                     int outSize = pspDecryptPRX((const u8*)inData, (u8 *)outData, size, nullptr, true);
                     WriteFile(outFile.c_str(), outData, outSize);
                 }
@@ -170,28 +184,50 @@ int main(int argc, char *argv[]) {
                 {
                     u32 pspOff = *(u32*)&inData[0x20];
                     u32 psarOff = *(u32*)&inData[0x24];
+                    if (infoOnly) {
+                        cout << "Input is a PBP with:" << endl;
+                    }
                     if (pspOff < size) {
                         if (*(u32*)&inData[pspOff] == ELF_MAGIC) {
-                            cout << "Non-encrypted PSP file, writing to " << outFile << endl;
-                            WriteFile(outFile.c_str(), &inData[pspOff], psarOff - pspOff);
+                            if (infoOnly) {
+                                cout << "- an unencrypted PSP (ELF) file" << endl;
+                            } else {
+                                cout << "Non-encrypted PSP file, writing to " << outFile << endl;
+                                WriteFile(outFile.c_str(), &inData[pspOff], psarOff - pspOff);
+                            }
                         } else {
-                            cout << "Decrypting PSP file to " << outFile << endl;
-                            int outSize = pspDecryptPRX((const u8 *)&inData[pspOff], (u8 *)outData, psarOff - pspOff, nullptr, true);
-                            WriteFile(outFile.c_str(), outData, outSize);
+                            if (infoOnly) {
+                                cout << "- an encrypted PSP executable encrypted with tag " << hex << setw(8) << *(u32*)&inData[pspOff + 0xD0] << endl;
+                            } else {
+                                cout << "Decrypting PSP file to " << outFile << endl;
+                                int outSize = pspDecryptPRX((const u8 *)&inData[pspOff], (u8 *)outData, psarOff - pspOff, nullptr, true);
+                                WriteFile(outFile.c_str(), outData, outSize);
+                            }
                         }
                     }
                     if (psarOff < size) {
-                        cout << "Extracting PSAR to " << outDir << endl;
-                        pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose);
+                        if (infoOnly) {
+                            cout << "- a PSAR with the following characteristics:" << endl;
+                        } else {
+                            cout << "Extracting PSAR to " << outDir << endl;
+                        }
+                        pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly);
                     }
                 }
                 break;
             case PSAR_MAGIC:
-                pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose);
+                if (infoOnly) {
+                    cout << "Input is a PSAR with the following characteristics:" << endl;
+                }
+                pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly);
                 break;
             case ELF_MAGIC:
-                cout << "Non-encrypted file, copying to " << outFile << endl;
-                WriteFile(outFile.c_str(), inData, size);
+                if (infoOnly) {
+                    cout << "Input is a non-encrypted PSP binary (ELF) file" << endl;
+                } else {
+                    cout << "Non-encrypted file, copying to " << outFile << endl;
+                    WriteFile(outFile.c_str(), inData, size);
+                }
                 break;
             default:
                 cout << "Unknown input file format!" << endl;

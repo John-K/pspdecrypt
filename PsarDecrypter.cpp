@@ -268,7 +268,6 @@ int pspPSARInit(const u8 *dataPSAR, u8 *dataOut, u8 *dataOut2)
 
     //oldschool = (dataPSAR[4] == 1); /* bogus update */
     psarVersion = dataPSAR[4];
-    printf("psarVersion = %d\n", dataPSAR[4]);
 
     int cbOut;
 
@@ -449,7 +448,7 @@ void makeDirs(std::string filename, bool isDir)
     }
 }
 
-int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly, u8 *preipl, u32 preiplSize, bool verbose)
+int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly, u8 *preipl, u32 preiplSize, bool verbose, bool infoOnly)
 {
     kirk_init();
     if (memcmp(dataPSAR, "PSAR", 4) != 0) {
@@ -458,7 +457,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
     }
     u8 *data1 = new u8[DATA_SIZE];
     u8 *data2 = new u8[DATA_SIZE];
-    printf("PSAR ok version %d\n", dataPSAR[4]);
+    printf("PSAR version %d\n", dataPSAR[4]);
     int res = pspPSARInit(dataPSAR, data1, data2);
     if (res < 0)
     {
@@ -468,7 +467,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
     char version[10];
     strncpy(version, GetVersion((char *)data1+0x10), 10);
     version[9] = '\0';
-    printf("Version %s.\n", version);
+    printf("Firmware version %s.\n", version);
     if (version[1] != '.' || strlen(version) != 4) {
         printf("Invalid version!?\n");
         return 1;
@@ -490,12 +489,15 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
         table_mode = 0;
     }
 
+    printf("table_mode = %d\n", table_mode);
+    if (infoOnly) {
+        return 0;
+    }
+
     mkdir((outdir).c_str(), 0777);
     mkdir((outdir + "/F0").c_str(), 0777);
     mkdir((outdir + "/F1").c_str(), 0777);
     mkdir((outdir + "/PSARDUMPER").c_str(), 0777);
-
-    printf("table_mode = %d\n", table_mode);
 
     while (1)
     {
