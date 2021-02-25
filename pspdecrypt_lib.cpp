@@ -197,7 +197,7 @@ void descramble03g(u32 *data, u32 i)
 }
 
 ////////// IPL Decryption /////////
-int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn)
+int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn, std::string &logStr)
 {
     int cbOut = 0;
     int xorkeyIdx = -1;
@@ -223,7 +223,9 @@ int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn)
                     break;
                 }
                 xorkeyIdx = i;
-                printf(",descramble using xorkey %d", xorkeyIdx);
+                char xorkeyStr[5];
+                snprintf(xorkeyStr, sizeof(xorkeyStr), "%d", xorkeyIdx);
+                logStr += std::string(",descramble using xorkey ") + xorkeyStr;
             } else {
                 descramble03g((u32*)decData, xorkeyIdx);
                 int ret = kirk1block(decData, pbOut);
@@ -279,37 +281,39 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr)
     return cbOut;
 }
 
-int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir, u8 *preipl, u32 preiplSize, bool verbose, bool keepAll)
+int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir, u8 *preipl, u32 preiplSize, bool verbose, bool keepAll, std::string &logStr)
 {
     u8 *tmpData = new u8[inDataSize];
     kirk_init();
 
-    int cb1 = pspDecryptIPL1(inData, tmpData, inDataSize);
+    int cb1 = pspDecryptIPL1(inData, tmpData, inDataSize, logStr);
     if (cb1 > 0)
     {
-        printf(",decrypted IPL");
+        logStr += ",decrypted IPL";
         u32 addr;
         int cb2 = pspLinearizeIPL2(tmpData, inData, cb1, &addr);
         std::string szDataPath = outdir + "/stage1_" + filename;
         if (cb2 > 0 && WriteFile(szDataPath.c_str(), inData, cb2))
         {
-            printf(",linearized at %08x", addr);
+            char addrStr[9];
+            snprintf(addrStr, sizeof(addrStr), "%08x", addr);
+            logStr += std::string(",linearized at ") + addrStr;
         }
         else
         {
-            printf(",failed linearizing");
+            logStr += ",failed linearizing";
             return -1;
         }
 
-        if (extractIPLStages(inData, cb2, version, addr, filename, outdir, preipl, preiplSize, verbose, keepAll) != 0)
+        if (extractIPLStages(inData, cb2, version, addr, filename, outdir, preipl, preiplSize, verbose, keepAll, logStr) != 0)
         {
-            printf(",failed IPL stages decryption");
+            logStr += ",failed IPL stages decryption";
             return -2;
         }
     }
     else
     {
-        printf(",failed decrypting IPL");
+        logStr += ",failed decrypting IPL";
         return -3;
     }
 
@@ -332,29 +336,29 @@ int pspIsCompressed(u8 *buf)
 	return res;
 }
 
-int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity)
+int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity, std::string &logStr)
 {
 	int retsize;
 	
 	if (inbuf[0] == 0x1F && inbuf[1] == 0x8B) 
 	{
 	    retsize = gunzip(inbuf, insize, outbuf, outcapacity);
-	    printf(",gzip");
+	    logStr += ",gzip";
 	}
 	else if (memcmp(inbuf, "2RLZ", 4) == 0) 
 	{
 	    retsize = LZRDecompress(outbuf, outcapacity, inbuf+4, NULL);
-		printf(",lzrc");
+		logStr += ",lzrc";
 	}
 	else if (memcmp(inbuf, "KL4E", 4) == 0)
 	{
 		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, NULL, 1);
-		printf(",kl4e");
+		logStr += ",kl4e";
 	}
 	else if (memcmp(inbuf, "KL3E", 4) == 0) 
 	{
 		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, NULL, 0);
-		printf(",kl3e");
+		logStr += ",kl3e";
 	}
 	else
 	{

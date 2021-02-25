@@ -184,12 +184,12 @@ int main(int argc, char *argv[]) {
             cerr << "You need to set --version to extract later stages of a standalone IPL." << endl;
             return 1;
         }
-        cout << "Decrypting standalone IPL";
-        if (decryptIPL((u8*)inData, size, version, "ipl", outDir, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, keepAll) < 0) {
-            cerr << endl << "Failed!" << endl;
+        string logStr;
+        if (decryptIPL((u8*)inData, size, version, "ipl", outDir, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, keepAll, logStr) < 0) {
+            cerr << "Decrypting standalone IPL" << logStr << endl;
             return 1;
         }
-        cout << endl;
+        cout << "Decrypting standalone IPL" << logStr << endl;
     } else {
         switch (*(u32*)inData) {
             case PSP_MAGIC:

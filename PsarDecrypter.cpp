@@ -26,9 +26,8 @@
 #include <fstream>
 #include <array>
 #include <vector>
+#include <iostream>
 
-#define LOADER "LOADER"
-#define INFO_LOG(type, fmt, ...) printf(type ": " fmt "\n", __VA_ARGS__)
 extern "C"
 {
 #include "libkirk/kirk_engine.h"
@@ -129,69 +128,73 @@ static int FindReboot(u8 *input, u8 *output, int size)
     return -1;
 }
 
-static void ExtractReboot(u8 *loadexec_data, int loadexec_data_size, const char *reboot, const char *rebootname, u8 *data1, u8 *data2, bool extractOnly)
+static int ExtractReboot(u8 *loadexec_data, int loadexec_data_size, const char *reboot, const char *rebootname, u8 *data1, u8 *data2, bool extractOnly, std::string &logStr)
 {
     int s = loadexec_data_size;
     memcpy(data1, loadexec_data, loadexec_data_size);
 
-    if (s <= 0)
-        return;
+    if (s <= 0) {
+        return -1;
+    }
 
-    printf(",extracting %s", rebootname);
+    logStr += " Extracting " + std::string(rebootname);
 
     s = FindReboot(data1, data2, s);
     if (s <= 0)
     {
         printf("Cannot find %s inside loadexec.\n", rebootname);
-        return;
+        return -1;
     }
 
     if (extractOnly) {
         if (WriteFile(reboot, data2, s) != s) {
             printf("Cannot write %s.\n", reboot);
-            return;
+            return -1;
         }
-        printf(",saved.");
-        return;
+        logStr += ",saved!";
+        return 0;
     }
 
     s = pspDecryptPRX(data2, data1, s);
     if (s <= 0)
     {
         printf("Cannot decrypt %s.\n", rebootname);
-        return;
+        return -1;
     }
-    printf(",decrypted");
+    logStr += ",decrypted";
 
     WriteFile(reboot, data1, s);
 
-    s = pspDecompress(data1, DATA_SIZE, data2, DATA_SIZE);
+    s = pspDecompress(data1, DATA_SIZE, data2, DATA_SIZE, logStr);
     if (s <= 0)
     {
         printf("Cannot decompress %s (0x%08X).\n", rebootname, s);
-        return;
+        return -1;
     }
 
     if (WriteFile(reboot, data2, s) != s)
     {
         printf("Cannot write %s.\n", reboot);
-        return;
+        return -1;
     }
 
-    printf(",done.");
+    logStr += ",done.";
+    return 0;
 }
 
-static void CheckExtractReboot(const char *name, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2, std::string outdir, bool extractOnly) {
+static int CheckExtractReboot(const char *name, u8 *pbToSave, int cbToSave, u8 *data1, u8 *data2, std::string outdir, bool extractOnly, std::string &logStr) {
     if (strcmp(name, "flash0:/kd/loadexec.prx") == 0) {
-        ExtractReboot(pbToSave, cbToSave, (outdir + "/PSARDUMPER/reboot.bin").c_str(), "reboot.bin", data1, data2, extractOnly);
+        return ExtractReboot(pbToSave, cbToSave, (outdir + "/PSARDUMPER/reboot.bin").c_str(), "reboot.bin", data1, data2, extractOnly, logStr);
     } else if (strncmp(name, "flash0:/kd/loadexec_", strlen("flash0:/kd/loadexec_")) == 0) {
         if (strlen(name) == strlen("flash0:/kd/loadexec_00g.prx")) {
             std::string filename = "reboot_00g.bin";
             filename[strlen("reboot_")] = name[strlen("flash0:/kd/loadexec_")];
             filename[strlen("reboot_") + 1] = name[strlen("flash0:/kd/loadexec_") + 1];
-            ExtractReboot(pbToSave, cbToSave, (outdir + "/PSARDUMPER/" + filename).c_str(), filename.c_str(), data1, data2, extractOnly);
+            return ExtractReboot(pbToSave, cbToSave, (outdir + "/PSARDUMPER/" + filename).c_str(), filename.c_str(), data1, data2, extractOnly, logStr);
         }
+        return -1;
     }
+    return 0;
 }
 
 // for 1.50 and later, they mangled the plaintext parts of the header
@@ -501,6 +504,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
 
     while (1)
     {
+        std::string logStr;
         char name[128];
         int cbExpanded;
         int pos;
@@ -566,7 +570,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
             }
         }
 
-        printf("'%s' ", name);
+        logStr = "'" + std::string(name) + "' ";
 
         const char* szFileBase = strrchr(name, '/');
 
@@ -612,7 +616,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
 
         if (cbExpanded > 0)
         {
-            printf("expanded");
+            logStr += "expanded";
 
             // If we don't decrypt modules, or for non-encrypted modules
             if (extractOnly || (memcmp(data2, "~PSP", 4) != 0))
@@ -624,11 +628,11 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
 
                     if (cbExpanded <= 0)
                     {
-                        printf(",pre-decrypt failed");
+                        logStr += ",pre-decrypt failed";
                     }
                     else
                     {
-                        printf(",pre-decrypt ok");
+                        logStr += ",pre-decrypt ok";
                         memcpy(data2, data1, cbExpanded);
                     }
                 }
@@ -639,8 +643,10 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                     break;
                 }
 
-                printf(",saved");
-                CheckExtractReboot(name, data2, cbExpanded, data1, data2, outdir, extractOnly);
+                logStr += ",saved!";
+                if (CheckExtractReboot(name, data2, cbExpanded, data1, data2, outdir, extractOnly, logStr) < 0) {
+                    logStr += ",error extracting/decrypting reboot.bin";
+                }
             }
 
             // For encrypted ~PSP modules, or ME images, if decrypting is not disabled
@@ -656,22 +662,22 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                     u8* pbToSave = data1;
                     int cbToSave = cbDecrypted;
 
-                    printf(",decrypted");
+                    logStr += ",decrypted";
 
                     if ((data1[0] == 0x1F && data1[1] == 0x8B) ||
                         memcmp(data1, "2RLZ", 4) == 0 || memcmp(data1, "KL4E", 4) == 0)
                     {
-                        int cbExp = pspDecompress(data1, cbToSave, data2, 3000000);
+                        int cbExp = pspDecompress(data1, cbToSave, data2, 3000000, logStr);
 
                         if (cbExp > 0)
                         {
-                            printf(",expanded");
+                            logStr += ",expanded";
                             pbToSave = data2;
                             cbToSave = cbExp;
                         }
                         else
                         {
-                            printf(",decompress error %d", cbExp);
+                            logStr += ",error decompressing";
                         }
                     }
 
@@ -680,28 +686,30 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                         printf("Error writing %s.\n", szDataPath.c_str());
                     }
 
-                    printf(",saved!");
-                    CheckExtractReboot(name, pbToSave, cbToSave, data1, data2, outdir, extractOnly);
+                    logStr += ",saved!";
+                    if (CheckExtractReboot(name, pbToSave, cbToSave, data1, data2, outdir, extractOnly, logStr) < 0) {
+                        logStr += ",error extracting/decrypting reboot.bin";
+                    }
                 }
                 else
                 {
-
-                    printf(",error during decryption [tag %08x].", (u32)*(u32_le*)&data2[0xD0]);
-
+                    char tagStr[9];
+                    snprintf(tagStr, sizeof(tagStr), "%08x", (u32)*(u32_le*)&data2[0xD0]);
+                    logStr += std::string(",error during decryption [tag ") + tagStr + "].";
                 }
             }
 
             else if (strncmp(name, "ipl:", 4) == 0 && !extractOnly)
             {
-                decryptIPL(data2, cbExpanded, intVersion, szFileBase, outdir + "/PSARDUMPER", preipl, preiplSize, verbose, keepAll);
+                decryptIPL(data2, cbExpanded, intVersion, szFileBase, outdir + "/PSARDUMPER", preipl, preiplSize, verbose, keepAll, logStr);
             }
         }
         else
         {
-            printf("empty");
+            logStr += "empty";
         }
 
-        printf("\n");
+        std::cout << logStr << std::endl;
     }
     printf("Done!\n");
 

@@ -489,7 +489,7 @@ int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn)
 }
 
 // Decompress/unscramble IPL stages 2 & 3 and kernel keys
-int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir, u8 *preipl_bin, u32 preiplSize, bool verbose, bool keepAll)
+int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir, u8 *preipl_bin, u32 preiplSize, bool verbose, bool keepAll, std::string &logStr)
 {
     g_debug = verbose;
     if (g_debug) {
@@ -539,12 +539,12 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
 
                 szDataPath = outdir + "/stage2_" + std::string(filename);
                 WriteFile(szDataPath.c_str(), decBuf, decSize);
-                printf(",stage2 decompressed");
+                logStr += ",stage2 decompressed";
                 decSize = pspDecryptIPL3((u8*)inData+img2_addr-loadAddr, outBuf, inDataSize - (img2_addr-loadAddr));
                 if (!decSize) {
                     printf("Failed decrypting stage3!\n");
                 } else {
-                    printf(",stage3 decrypted");
+                    logStr += ",stage3 decrypted";
                     szDataPath = outdir + "/stage3_" + std::string(filename);
                     WriteFile(szDataPath.c_str(), outBuf, decSize);
                     if (g_debug) {
@@ -670,7 +670,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
             if (g_debug) {
                 printf("No preipl provided and key not found, aborting\n");
             }
-            printf(",no key found");
+            logStr += ",no key found";
             return 1;
         }
     }
@@ -693,7 +693,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
 
     szDataPath = outdir + "/stage2_" + std::string(filename);
     WriteFile(szDataPath.c_str(), decBuf, decSize);
-    printf(",stage2 unscrambled & decompressed");
+    logStr += ",stage2 unscrambled & decompressed";
 
     /////////////////////////
     // Find keys used for stage3 unscrambling (they're in stage2)
@@ -791,7 +791,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
         if (!decSize) {
             printf("Failed decrypting kernel keys!\n");
         } else {
-            printf(",kernel keys decrypted");
+            logStr += ",kernel keys decrypted";
             szDataPath = outdir + "/kkeys_" + std::string(filename);
             WriteFile(szDataPath.c_str(), outBuf, decSize);
         }
@@ -825,9 +825,9 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
 
             szDataPath = outdir + "/stage3_" + std::string(filename);
             WriteFile(szDataPath.c_str(), decBuf, decompSize);
-            printf(",stage3 decrypted & decompressed");
+            logStr += ",stage3 decrypted & decompressed";
         } else {
-            printf(",stage3 decrypted");
+            logStr += ",stage3 decrypted";
             szDataPath = outdir + "/stage3_" + std::string(filename);
             WriteFile(szDataPath.c_str(), outBuf, decSize);
         }
