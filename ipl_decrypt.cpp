@@ -489,7 +489,7 @@ int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn)
 }
 
 // Decompress/unscramble IPL stages 2 & 3 and kernel keys
-int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir, u8 *preipl_bin, u32 preiplSize, bool verbose)
+int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir, u8 *preipl_bin, u32 preiplSize, bool verbose, bool keepAll)
 {
     g_debug = verbose;
     if (g_debug) {
@@ -532,8 +532,10 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
                 if (g_debug) {
                     printf("decompressed %d bytes\n", decSize);
                 }
-                szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz" ;
-                WriteFile(szDataPath.c_str(), (u8*)inData+gzip_addr-loadAddr, realInSize);
+                if (keepAll) {
+                    szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz" ;
+                    WriteFile(szDataPath.c_str(), (u8*)inData+gzip_addr-loadAddr, realInSize);
+                }
 
                 szDataPath = outdir + "/stage2_" + std::string(filename);
                 WriteFile(szDataPath.c_str(), decBuf, decSize);
@@ -684,8 +686,10 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
     if (g_debug) {
         printf("decompressed %d bytes\n", decSize);
     }
-    szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz";
-    WriteFile(szDataPath.c_str(), (u8*)inData+img_off-loadAddr, realInSize);
+    if (keepAll) {
+        szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz";
+        WriteFile(szDataPath.c_str(), (u8*)inData+img_off-loadAddr, realInSize);
+    }
 
     szDataPath = outdir + "/stage2_" + std::string(filename);
     WriteFile(szDataPath.c_str(), decBuf, decSize);
@@ -814,8 +818,10 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
             if (g_debug) {
                 printf("decompressed %d bytes\n", decompSize);
             }
-            szDataPath = outdir + "/stage3_" + std::string(filename)+ ".gz";
-            WriteFile(szDataPath.c_str(), outBuf, realInSize);
+            if (keepAll) {
+                szDataPath = outdir + "/stage3_" + std::string(filename)+ ".gz";
+                WriteFile(szDataPath.c_str(), outBuf, realInSize);
+            }
 
             szDataPath = outdir + "/stage3_" + std::string(filename);
             WriteFile(szDataPath.c_str(), decBuf, decompSize);

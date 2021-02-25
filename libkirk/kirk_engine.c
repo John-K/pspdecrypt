@@ -274,32 +274,33 @@ int kirk_CMD1(u8* outbuff, u8* inbuff, int size)
   
   AES_cbc_decrypt(&aes_kirk1, inbuff, (u8*)&keys, 16*2); //decrypt AES & CMAC key to temp buffer
   
-  if(header->ecdsa_hash == 1 && g_checkEcdsa)
+  if(header->ecdsa_hash == 1)
   {
-  	SHA_CTX sha;
-  	KIRK_CMD1_ECDSA_HEADER* eheader = (KIRK_CMD1_ECDSA_HEADER*) inbuff;
-  	u8 kirk1_pub[40];
-  	u8 header_hash[20];u8 data_hash[20];
-  	ecdsa_set_curve(ec_p,ec_a,ec_b1,ec_N1,Gx1,Gy1);
-  	memcpy(kirk1_pub,Px1,20);
-  	memcpy(kirk1_pub+20,Py1,20);
-  	ecdsa_set_pub(kirk1_pub);
-		//Hash the Header
-		SHAInit(&sha);
-		SHAUpdate(&sha, (u8*)eheader+0x60, 0x30);
-		SHAFinal(header_hash, &sha);		
-		
-	  if(!ecdsa_verify(header_hash,eheader->header_sig_r,eheader->header_sig_s)) {
-	    return KIRK_HEADER_HASH_INVALID;
-	  }
-	  SHAInit(&sha);
-		SHAUpdate(&sha, (u8*)eheader+0x60, size-0x60);
-		SHAFinal(data_hash, &sha);  
-		
-	  if(!ecdsa_verify(data_hash,eheader->data_sig_r,eheader->data_sig_s)) {
-	    return KIRK_DATA_HASH_INVALID;
-	  }
-
+    if (g_checkEcdsa) {
+      SHA_CTX sha;
+      KIRK_CMD1_ECDSA_HEADER* eheader = (KIRK_CMD1_ECDSA_HEADER*) inbuff;
+      u8 kirk1_pub[40];
+      u8 header_hash[20];u8 data_hash[20];
+      ecdsa_set_curve(ec_p,ec_a,ec_b1,ec_N1,Gx1,Gy1);
+      memcpy(kirk1_pub,Px1,20);
+      memcpy(kirk1_pub+20,Py1,20);
+      ecdsa_set_pub(kirk1_pub);
+      //Hash the Header
+      SHAInit(&sha);
+      SHAUpdate(&sha, (u8*)eheader+0x60, 0x30);
+      SHAFinal(header_hash, &sha);
+      
+      if(!ecdsa_verify(header_hash,eheader->header_sig_r,eheader->header_sig_s)) {
+        return KIRK_HEADER_HASH_INVALID;
+      }
+      SHAInit(&sha);
+      SHAUpdate(&sha, (u8*)eheader+0x60, size-0x60);
+      SHAFinal(data_hash, &sha);  
+      
+      if(!ecdsa_verify(data_hash,eheader->data_sig_r,eheader->data_sig_s)) {
+        return KIRK_DATA_HASH_INVALID;
+      }
+    }
   } else  {
     int ret = kirk_CMD10(inbuff, size);
     if(ret != KIRK_OPERATION_SUCCESS) return ret;
