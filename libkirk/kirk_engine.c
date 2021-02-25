@@ -32,6 +32,8 @@
 #include "AES.h"
 #include "SHA1.h"
 
+int g_checkEcdsa = 0;
+
 /* ------------------------- KEY VAULT ------------------------- */
 unsigned char keyvault[0x80][0x10] =
 {
@@ -272,7 +274,7 @@ int kirk_CMD1(u8* outbuff, u8* inbuff, int size)
   
   AES_cbc_decrypt(&aes_kirk1, inbuff, (u8*)&keys, 16*2); //decrypt AES & CMAC key to temp buffer
   
-  if(header->ecdsa_hash == 1)
+  if(header->ecdsa_hash == 1 && g_checkEcdsa)
   {
   	SHA_CTX sha;
   	KIRK_CMD1_ECDSA_HEADER* eheader = (KIRK_CMD1_ECDSA_HEADER*) inbuff;
