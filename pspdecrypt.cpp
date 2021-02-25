@@ -37,7 +37,7 @@ void help(const char* exeName) {
     cout << "  -P, --psp-only     only extract/decrypt the .PSP executable file of the PBP" << endl;
     cout << "  -A, --psar-only    only extract/decrypt the .PSAR updater file of the PBP" << endl;
     cout << "IPL decryption & PSAR(/PBP) options:" << endl;
-    cout << "  -O, --outdir=DIR   output path for the PSAR's or IPL's contents (default: current directory)" << endl;
+    cout << "  -O, --outdir=DIR   output path for the PSAR's or IPL's contents (default: [VER] if given [VER].PBP/PSAR)" << endl;
     cout << "  -i, --ipl-decrypt  decrypt the IPL given as an argument" << endl;
     cout << "  -V, --version=VER  the firmware version (eg 660) used for extracting the IPL stages" << endl;
     cout << "  -p, --preipl       preipl image used for decrypting the later IPL stages" << endl;
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     int long_index;
 
     string inFilename = "";
-    string outDir = ".";
+    string outDir = "";
     string outFile = "";
     string preipl = "";
     bool preiplSet = false;
@@ -139,6 +139,15 @@ int main(int argc, char *argv[]) {
 
     if (outFile == "") {
         outFile = inFilename + ".dec";
+    }
+
+    if (outDir == "") {
+        size_t dotOff = inFilename.find_last_of('.');
+        if (dotOff == string::npos) {
+            outDir = inFilename + ".extr";
+        } else {
+            outDir = inFilename.substr(0, dotOff);
+        }
     }
 
     ifstream inFile (inFilename, ios::in|ios::binary|ios::ate);
