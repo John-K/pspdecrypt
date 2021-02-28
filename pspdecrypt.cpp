@@ -37,10 +37,11 @@ void help(const char* exeName) {
     cout << "  -P, --psp-only     only extract/decrypt the .PSP executable file of the PBP" << endl;
     cout << "  -A, --psar-only    only extract/decrypt the .PSAR updater file of the PBP" << endl;
     cout << "IPL decryption & PSAR(/PBP) options:" << endl;
-    cout << "  -O, --outdir=DIR   output path for the PSAR's or IPL's contents (default: current directory)" << endl;
+    cout << "  -O, --outdir=DIR   output path for the PSAR's or IPL's contents (default: [VER] if given [VER].PBP/PSAR)" << endl;
     cout << "  -i, --ipl-decrypt  decrypt the IPL given as an argument" << endl;
     cout << "  -V, --version=VER  the firmware version (eg 660) used for extracting the IPL stages" << endl;
     cout << "  -p, --preipl       preipl image used for decrypting the later IPL stages" << endl;
+    cout << "  -k, --keep-all     also keep the intermediate .gz files of later stages" << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -57,12 +58,13 @@ int main(int argc, char *argv[]) {
         {"info",         no_argument,       0, 'I'},
         {"psar-only",    no_argument,       0, 'A'},
         {"psp-only",     no_argument,       0, 'P'},
+        {"keep-all",     no_argument,       0, 'k'},
         {0,              0,                 0,  0 }
     };
     int long_index;
 
     string inFilename = "";
-    string outDir = ".";
+    string outDir = "";
     string outFile = "";
     string preipl = "";
     bool preiplSet = false;
@@ -74,6 +76,7 @@ int main(int argc, char *argv[]) {
     bool infoOnly = false;
     bool pspOnly = false;
     bool psarOnly = false;
+    bool keepAll = false;
     int version = -1;
     int c = 0;
     cout << showbase << internal << setfill('0');
@@ -113,6 +116,9 @@ int main(int argc, char *argv[]) {
             case 'P':
                 pspOnly = true;
                 break;
+            case 'k':
+                keepAll = true;
+                break;
             default:
                 help(argv[0]);
                 return 1;
@@ -133,6 +139,15 @@ int main(int argc, char *argv[]) {
 
     if (outFile == "") {
         outFile = inFilename + ".dec";
+    }
+
+    if (outDir == "") {
+        size_t dotOff = inFilename.find_last_of('.');
+        if (dotOff == string::npos) {
+            outDir = inFilename + ".extr";
+        } else {
+            outDir = inFilename.substr(0, dotOff);
+        }
     }
 
     ifstream inFile (inFilename, ios::in|ios::binary|ios::ate);
@@ -178,12 +193,12 @@ int main(int argc, char *argv[]) {
             cerr << "You need to set --version to extract later stages of a standalone IPL." << endl;
             return 1;
         }
-        cout << "Decrypting standalone IPL";
-        if (decryptIPL((u8*)inData, size, version, "ipl", outDir, preiplSet ? preiplBuf : nullptr, preiplSize, verbose) < 0) {
-            cerr << endl << "Failed!" << endl;
+        string logStr;
+        if (decryptIPL((u8*)inData, size, version, "ipl", outDir, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, keepAll, logStr) < 0) {
+            cerr << "Decrypting standalone IPL" << logStr << endl;
             return 1;
         }
-        cout << endl;
+        cout << "Decrypting standalone IPL" << logStr << endl;
     } else {
         switch (*(u32*)inData) {
             case PSP_MAGIC:
@@ -225,7 +240,7 @@ int main(int argc, char *argv[]) {
                         } else {
                             cout << "Extracting PSAR to " << outDir << endl;
                         }
-                        pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly);
+                        pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly, keepAll);
                     }
                 }
                 break;
@@ -233,7 +248,7 @@ int main(int argc, char *argv[]) {
                 if (infoOnly) {
                     cout << "Input is a PSAR with the following characteristics:" << endl;
                 }
-                pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly);
+                pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly, keepAll);
                 break;
             case ELF_MAGIC:
                 if (infoOnly) {
