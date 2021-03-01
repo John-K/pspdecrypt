@@ -11,6 +11,8 @@
 
 extern "C" {
 #include "libkirk/kirk_engine.h"
+#include "syscon_ipl_keys.h"
+
 }
 
 #define max(a, b) ((a) < (b) ? (b) : (a))
@@ -694,7 +696,27 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
     szDataPath = outdir + "/stage2_" + std::string(filename);
     WriteFile(szDataPath.c_str(), decBuf, decSize);
     logStr += ",stage2 unscrambled & decompressed";
-
+    
+    // New: Added handling for xor syscon step for keys
+    // Super fun happy time
+    // final missing peice :)
+    u8 scidx[0x10];
+    u8 stage2xor[0x10];
+    u8 scxor[0x10];
+    int model = ((filename[8] - 0x30) << 8) | (filename[9] - 0x30);
+    int xkeyoff =findStage2Keys(decBuf,decSize);
+    if(xkeyoff>0) {
+        memcpy(scidx,&decBuf[xkeyoff], 0x10);
+        if((version>505) && (model > 1)) {
+            memcpy(stage2xor,&decBuf[xkeyoff+0x10], 0x10);
+        } else {
+            memset(stage2xor,0,0x10);
+        }
+        getSysconIPLKey(model, scidx,scxor);
+        for(int j=0;j<0x10;j++) scxor[j] ^= stage2xor[j];
+    } else{
+        memset(scxor,0,0x10);
+    }
     /////////////////////////
     // Find keys used for stage3 unscrambling (they're in stage2)
     /////////////////////////
@@ -793,6 +815,8 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
         } else {
             logStr += ",kernel keys decrypted";
             szDataPath = outdir + "/kkeys_" + std::string(filename);
+            // Added the final xor to create to correct second key
+            for(int j=0;j<0x10;j++) outBuf[j+0x10] ^= scxor[j];
             WriteFile(szDataPath.c_str(), outBuf, decSize);
         }
     }
