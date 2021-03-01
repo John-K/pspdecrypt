@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <openssl/aes.h>
+#include "libkirk/AES.h"
 
 unsigned char sc_secret_01_tabl[0x400] = 
 {   0x1A, 0x52, 0x1B, 0xDE, 0x7A, 0xDB, 0x8D, 0xDF, 0xF6, 0x07, 0x9F, 0xCC, 0x0F, 0x0B, 0x67, 0x14, 
@@ -313,10 +313,10 @@ unsigned char  sc_key[0x10] = { 0xF1, 0x07, 0x30, 0xC3, 0x11, 0xE0, 0x26, 0xFC, 
 
 
 int getSysconIndex(unsigned char * data) {
-    AES_KEY scindexkey;
+    AES_ctx scindexkey;
     unsigned char result[0x10];
-    AES_set_decrypt_key(sc_key,128,&scindexkey);
-    AES_ecb_encrypt(data,result,&scindexkey,0);
+    AES_set_key(&scindexkey,sc_key,128);
+    AES_decrypt(&scindexkey,data,result);
     return result[8]&0x3F;
         
 }
