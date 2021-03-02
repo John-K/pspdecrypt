@@ -703,7 +703,7 @@ int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, cons
     u8 scidx[0x10];
     u8 stage2xor[0x10];
     u8 scxor[0x10];
-    int model = ((filename[8] - 0x30) << 8) | (filename[9] - 0x30);
+    int model = ((filename[8] - 0x30) * 10) + (filename[9] - 0x30);
     int xkeyoff =findStage2Keys(decBuf,decSize);
     if(xkeyoff>0) {
         memcpy(scidx,&decBuf[xkeyoff], 0x10);
