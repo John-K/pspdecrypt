@@ -7,7 +7,7 @@ CXXFLAGS=-O3
 
 BIN=pspdecrypt
 LIBKIRK_SRCS=$(wildcard libkirk/*.c)
-OBJS=libLZR.o kl4e.o common.o ipl_decrypt.o pspdecrypt_lib.o PrxDecrypter.o pspdecrypt.o PsarDecrypter.o $(LIBKIRK_SRCS:%.c=%.o)
+OBJS=libLZR.o kl4e.o common.o syscon_ipl_keys.o ipl_decrypt.o pspdecrypt_lib.o PrxDecrypter.o pspdecrypt.o PsarDecrypter.o $(LIBKIRK_SRCS:%.c=%.o)
 
 all: $(BIN)
 
