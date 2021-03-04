@@ -621,7 +621,9 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
             // If we don't decrypt modules, or for non-encrypted modules
             if (extractOnly || (memcmp(data2, "~PSP", 4) != 0))
             {
-                if (!extractOnly && strncmp(name, "ipl:", 4) == 0 && *(u32*)(data2 + 0x60) != 1)
+                // Check if the IPL file is not a kirk1 (or kirk1 with additional keys for 03g+), which means it needs predecryption
+                if (!extractOnly && strncmp(name, "ipl:", 4) == 0
+                    && *(u32*)(data2 + 0x60) != 1 && *(u32*)(data2 + 0x60) != 0x10001)
                 {
                     // IPL Pre-decryption
                     cbExpanded = pspDecryptPRX(data2, data1, cbExpanded);
