@@ -8,7 +8,7 @@ Decryption code copied from [ppsspp](https://github.com/hrydgard/ppsspp/), makin
 KL3E & KL4E implementation and PSAR extraction by artart78
 
 ## Usage
-`pspdecrypt` is capable of decrypting `PRX` and `IPL` files as well as decyrpting and extracting `PSAR` archives and its contents, including IPL stages where possible.
+`pspdecrypt` is capable of decrypting `PRX` and `IPL` files as well as decrypting and extracting `PSAR` archives and its contents, including IPL stages where possible.
 
 ## Release Notes
 ### 0.8
