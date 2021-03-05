@@ -16,7 +16,7 @@ This project is made up of two utilities: `pspdecrypt` and `psardecrypt`.
 
 ## Release Notes
 ### 0.8
- * Adds KL4E & KL4E decompression support for PSAR contents
+ * Adds KL3E & KL4E decompression support for PSAR contents
  * Adds `PSAR` support
  * Extracts most public FW, older JigKick payloads, and most TT FW
  
