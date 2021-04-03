@@ -115,20 +115,20 @@ void SHA256_Final2(u8 *digest, SHA256_CTX *ctx)
     }
 }
 
-void sha256hmac(u8 *key, u32 inSize1, u8 *data, u32 datalen, u8 *out) // at 0x040F0C08 in 2.60
+void sha256hmac(u8 *key, u32 keylen, u8 *data, u32 datalen, u8 *out) // at 0x040F0C08 in 2.60
 {
     SHA256_CTX ctx; // sp
     u8 buf1[32]; // sp + 112 // actually 28 in 3.80+
     u8 buf2[64]; // sp + 144
     if (datalen == 0 || data == NULL) {
-        sha256Digest(key, inSize1, out);
+        sha256Digest(key, keylen, out);
         return;
     }
     memset(buf2, 0, 64);
-    if (inSize1 > 64) {
-        sha256Digest(key, inSize1, buf2);
+    if (keylen > 64) {
+        sha256Digest(key, keylen, buf2);
     } else {
-        memcpy(buf2, key, inSize1);
+        memcpy(buf2, key, keylen);
     }
     for (s32 i = 0; i < 64; i++) {
         buf2[i] ^= 0x36; // I_PAD
