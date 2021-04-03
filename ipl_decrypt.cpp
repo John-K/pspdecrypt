@@ -115,34 +115,30 @@ void SHA256_Final2(u8 *digest, SHA256_CTX *ctx)
     }
 }
 
-void scrambleBuf(u8 *in1, u32 inSize1, u8 *in2, u32 inSize2, u8 *out) // at 0x040F0C08 in 2.60
+void sha256hmac(u8 *key, u32 inSize1, u8 *data, u32 datalen, u8 *out) // at 0x040F0C08 in 2.60
 {
     SHA256_CTX ctx; // sp
     u8 buf1[32]; // sp + 112 // actually 28 in 3.80+
     u8 buf2[64]; // sp + 144
-    if (inSize2 == 0 || in2 == NULL) {
-        sha256Digest(in1, inSize1, out);
+    if (datalen == 0 || data == NULL) {
+        sha256Digest(key, inSize1, out);
         return;
     }
-    // 0C78
     memset(buf2, 0, 64);
     if (inSize1 > 64) {
-        // 0D5C
-        sha256Digest(in1, inSize1, buf2);
+        sha256Digest(key, inSize1, buf2);
     } else {
-        memcpy(buf2, in1, inSize1);
+        memcpy(buf2, key, inSize1);
     }
-    // 0CAC
     for (s32 i = 0; i < 64; i++) {
-        buf2[i] ^= 0x36;
+        buf2[i] ^= 0x36; // I_PAD
     }
     SHA256_Init2(&ctx);
     SHA256_Update(&ctx, buf2, 64);
-    SHA256_Update(&ctx, in2, inSize2);
+    SHA256_Update(&ctx, data, datalen);
     SHA256_Final2(buf1, &ctx);
-    // 0D04
     for (s32 i = 0; i < 64; i++) {
-        buf2[i] ^= 0x6A;
+        buf2[i] ^= 0x6A; // I_PAD ^ O_OPAD
     }
     SHA256_Init2(&ctx);
     SHA256_Update(&ctx, buf2, 64);
@@ -365,20 +361,20 @@ s32 sfmtInit(SceKernelUtilsMt19937Context *ctx, u32 *seed, u32 seedSize) // 0x04
     return 0;
 }
 
-void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encryptedImg, s32 encryptedSize) // at 0x040F0D70  in 2.60
+void decrypt(void *preipl, u32 preiplSize, void *preiplHmacKey, void *dataHmacKey, void *encryptedImg, s32 encryptedSize) // at 0x040F0D70  in 2.60
 {
     SceKernelUtilsMt19937Context ctx; // sp..sp+2500
-    u32 hash[8]; // sp + 2512
+    u32 hmac[8]; // sp + 2512
     u32 buf1[16]; // sp + 2544
-    u32 buf2[8]; // sp + 2608
+    u32 hmac2[8]; // sp + 2608
     if (g_usePrecomp) {
-        memcpy(hash, g_precompKey.data(), 32);
+        memcpy(hmac, g_precompKey.data(), 32);
     } else {
-        scrambleBuf((u8*)unk1, 64, (u8*)preipl, preiplSize, (u8*)hash);
+        sha256hmac((u8*)preiplHmacKey, 64, (u8*)preipl, preiplSize, (u8*)hmac);
         if (preipl != NULL && g_debug) {
-            printf("using hash = {0x%08x, {", *(u32*)unk1);
+            printf("using hmac = {0x%08x, {", *(u32*)preiplHmacKey);
             for (s32 i = 0; i < 8; i++) {
-                printf("0x%08x", hash[i]);
+                printf("0x%08x", hmac[i]);
                 if (i < 7) {
                     printf(", ");
                 }
@@ -388,17 +384,17 @@ void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encrypt
     }
     ctx.count = 0;
     if (g_useSfmt) {
-        sfmtInit(&ctx, hash, g_customSha ? 7 : 8);
+        sfmtInit(&ctx, hmac, g_customSha ? 7 : 8);
     } else {
         // 0DCC
         for (s32 i = 0; i < 624; i += 8) {
-            memcpy(&ctx.state[i], hash, g_customSha ? 28 : 32);
+            memcpy(&ctx.state[i], hmac, g_customSha ? 28 : 32);
             if (g_customSha) {
                 ctx.state[i + 7] = 0;
             }
         }
     }
-    memset(hash, 0, sizeof(hash));
+    memset(hmac, 0, sizeof(hmac));
     if (!g_useSfmt) {
         // 0E40
         for (s32 i = 0; i < 624; i++) {
@@ -421,24 +417,24 @@ void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encrypt
                 mt19937UInt(&ctx); // version 3.1x only
             }
         }
-        scrambleBuf((u8*)unk2, 64, (u8*)buf1, 64, (u8*)buf2);
-        s32 hashSize = g_customSha ? 28 : 32;
-        if (i + hashSize > encryptedSize) {
+        sha256hmac((u8*)dataHmacKey, 64, (u8*)buf1, 64, (u8*)hmac2);
+        s32 hmacSize = g_customSha ? 28 : 32;
+        if (i + hmacSize > encryptedSize) {
             for (s32 j = 0; i + j < encryptedSize; j++) {
-                *(decryptBuf++) ^= ((u8*)buf2)[j];
+                *(decryptBuf++) ^= ((u8*)hmac2)[j];
             }
         } else {
-            for (s32 j = 0; j < hashSize / 4; j++) {
-                *(u32*)decryptBuf ^= buf2[j];
+            for (s32 j = 0; j <hmacSize / 4; j++) {
+                *(u32*)decryptBuf ^= hmac2[j];
                 decryptBuf += 4;
             }
         }
     }
-    // in 3.30+, here ctx, buf1 and buf2 are memset to 0
+    // in 3.30+, here ctx, buf1 and hmac2 are memset to 0
 }
 
 // for 3.30+ part1
-void decrypt330(u32 *preipl, u32 preiplSize, void *unk1, void *unk2, void *encryptedImg, s32 encryptedSize, u32 realPreiplSize) // at 0x040F1018 in 3.30 part1
+void decrypt330(u32 *preipl, u32 preiplSize, void *preiplHmacKey, void *dataHmacKey, void *encryptedImg, s32 encryptedSize, u32 realPreiplSize) // at 0x040F1018 in 3.30 part1
 {
     u8 buf1[32];
     SceKernelUtilsMt19937Context ctx;
@@ -448,7 +444,7 @@ void decrypt330(u32 *preipl, u32 preiplSize, void *unk1, void *unk2, void *encry
     for (s32 i = 0; i < realPreiplSize / 4; i++) {
         buf2[i] = preipl[i] + mt19937UInt(&ctx);
     }
-    scrambleBuf(g_newKey, preiplSize, (u8*)buf2, realPreiplSize, buf1);
+    sha256hmac(g_newKey, preiplSize, (u8*)buf2, realPreiplSize, buf1);
     memset(buf2, 0, 4096);
     memset(&ctx, 0, 2500);
     // Note the checksum part does not exist for testing tools since it only allows one preipl format (but the XOR doesn't seem to be triggered anyway)
@@ -464,7 +460,7 @@ void decrypt330(u32 *preipl, u32 preiplSize, void *unk1, void *unk2, void *encry
             buf1[i] ^= g_xorKey[i];
         }
     }
-    decrypt(buf1, 32, unk1, unk2, encryptedImg, encryptedSize);
+    decrypt(buf1, 32, preiplHmacKey, dataHmacKey, encryptedImg, encryptedSize);
 }
 
 s32 sha256Digest(u8 *data, u32 size, u8 *digest) // at 0x040F12CC 
