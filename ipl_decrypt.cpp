@@ -11,20 +11,13 @@
 
 extern "C" {
 #include "libkirk/kirk_engine.h"
-}
+#include "syscon_ipl_keys.h"
 
-/*
-// Add this if you want to compute the keys yourself!
-#include "preipl.h"
-#define PREIPL
-// Note that the size to specify for testing tools is 704 although in theory it's 4096.
-// It's 704 for devkit too (size of the random blob they put in memory before running the IPL)
-#define PREIPL_SIZE 4096
-*/
+}
 
 #define max(a, b) ((a) < (b) ? (b) : (a))
 
-const bool debug = false;
+bool g_debug = false;
 
 // 3.80+ use a custom Sha256 (with different initialization constants and the output truncated to 28 bytes), in part1 only
 int g_customSha = 0;
@@ -57,6 +50,7 @@ std::map<u32, std::array<u32, 8>> g_keys {
     {0x0bb77011, {0xf4710af6, 0x46a34052, 0xdef91911, 0x29afe7d7, 0xc7fc1e55, 0xd0838eb1, 0xe069efd4, 0x00000000}}, // 3.80, 3.90, 3.93 02g
     {0x8f94e800, {0xe359cf7e, 0x0c497ceb, 0x5ddf77c8, 0xf9bd7557, 0x00f4c84e, 0xe8b8bb30, 0x9417a01f, 0x00000000}}, // 3.95, 3.96, 4.0x 01g
     {0x835f216c, {0xbd44491e, 0x2846ad03, 0x8ab0052e, 0x800e913b, 0x311ac562, 0x164bcb2c, 0x47791324, 0x00000000}}, // 3.95, 3.96, 4.0x 02g
+    {0x1605b947, {0x103e2ed1, 0x77a7c0d0, 0x66793d55, 0x48a1aa46, 0x8f08df6d, 0x9b18090b, 0x748538dd, 0x00000000}}, // 4.21 03g
     {0xf6d67166, {0xc9d132c6, 0x39bf60aa, 0x1e0beb42, 0x2527c8aa, 0xee9568c7, 0xc1e9c001, 0xe12d8a28, 0x00000000}}, // 5.00, 5.01, 5.02, 5.03 01g
     {0x1d3b3e5c, {0x0bdc608a, 0xb798378c, 0xd7685fca, 0x2eff316c, 0x360b71bd, 0x54cf987b, 0xa33e199f, 0x00000000}}, // 5.00, 5.01, 5.02, 5.03 02g
     {0xdaaed916, {0xb66b5ed0, 0x6050ffe7, 0x05d943de, 0x740c00b3, 0xe3162c25, 0x10e84f28, 0x08fb61e5, 0x00000000}}, // 5.00, 5.01, 5.02, 5.03 03g
@@ -66,6 +60,8 @@ std::map<u32, std::array<u32, 8>> g_keys {
     {0xdd076132, {0xba731b75, 0xcc82b010, 0xeb35b72f, 0xcc228644, 0x56d6ba1e, 0x0d53c995, 0x988869a6, 0x00000000}}, // 5.55 01g
     {0x03860456, {0xa35e7406, 0x8f85a45c, 0x73da7972, 0x2b231cda, 0x0352d13b, 0x1a5a0926, 0x86e6b2aa, 0x00000000}}, // 5.55 02g
     {0x4bcf9cd3, {0xd03eb41a, 0xa5cf5395, 0x13fe9bd2, 0x0eb708e4, 0xf6836b3d, 0xb9f0fcb8, 0x9ddf3756, 0x00000000}}, // 5.55 03g
+    {0x1e4deaad, {0x969e578c, 0xd177ecbd, 0x8ace8ccf, 0xf0ea87f0, 0x34176e61, 0xdd680510, 0x6f6455ce, 0x00000000}}, // 5.70 04g
+    {0x2ee36b15, {0xff9c66bf, 0x37dd4762, 0x9c86545f, 0xf0c04791, 0x9550728c, 0x92233d0d, 0x97995f06, 0x00000000}}, // 5.70 05g
     {0xbd0cd90b, {0xaa80ca25, 0x8686d001, 0x2af2ed65, 0x77b0ca3a, 0xb608924f, 0x8454d567, 0xfb1a3e15, 0x00000000}}, // 6.00, 6.10, 6.20 01g
     {0x66e25e99, {0xd7af4f1e, 0x7cac691f, 0xc45ddbc2, 0x80c62fbf, 0x74928262, 0x36adec73, 0x9f38dbe9, 0x00000000}}, // 6.00, 6.10, 6.20 02g
     {0x791e4cd7, {0xcb69b76f, 0x6aba2c7f, 0xb808770e, 0xaddf932a, 0xb07ebfac, 0x447c43b3, 0x4cc9ce7d, 0x00000000}}, // 6.00, 6.10, 6.20 03g
@@ -119,34 +115,30 @@ void SHA256_Final2(u8 *digest, SHA256_CTX *ctx)
     }
 }
 
-void scrambleBuf(u8 *in1, u32 inSize1, u8 *in2, u32 inSize2, u8 *out) // at 0x040F0C08 in 2.60
+void sha256hmac(u8 *key, u32 keylen, u8 *data, u32 datalen, u8 *out) // at 0x040F0C08 in 2.60
 {
     SHA256_CTX ctx; // sp
     u8 buf1[32]; // sp + 112 // actually 28 in 3.80+
     u8 buf2[64]; // sp + 144
-    if (inSize2 == 0 || in2 == NULL) {
-        sha256Digest(in1, inSize1, out);
+    if (datalen == 0 || data == NULL) {
+        sha256Digest(key, keylen, out);
         return;
     }
-    // 0C78
     memset(buf2, 0, 64);
-    if (inSize1 > 64) {
-        // 0D5C
-        sha256Digest(in1, inSize1, buf2);
+    if (keylen > 64) {
+        sha256Digest(key, keylen, buf2);
     } else {
-        memcpy(buf2, in1, inSize1);
+        memcpy(buf2, key, keylen);
     }
-    // 0CAC
     for (s32 i = 0; i < 64; i++) {
-        buf2[i] ^= 0x36;
+        buf2[i] ^= 0x36; // I_PAD
     }
     SHA256_Init2(&ctx);
     SHA256_Update(&ctx, buf2, 64);
-    SHA256_Update(&ctx, in2, inSize2);
+    SHA256_Update(&ctx, data, datalen);
     SHA256_Final2(buf1, &ctx);
-    // 0D04
     for (s32 i = 0; i < 64; i++) {
-        buf2[i] ^= 0x6A;
+        buf2[i] ^= 0x6A; // I_PAD ^ O_OPAD
     }
     SHA256_Init2(&ctx);
     SHA256_Update(&ctx, buf2, 64);
@@ -369,20 +361,20 @@ s32 sfmtInit(SceKernelUtilsMt19937Context *ctx, u32 *seed, u32 seedSize) // 0x04
     return 0;
 }
 
-void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encryptedImg, s32 encryptedSize) // at 0x040F0D70  in 2.60
+void decrypt(void *preipl, u32 preiplSize, void *preiplHmacKey, void *dataHmacKey, void *encryptedImg, s32 encryptedSize) // at 0x040F0D70  in 2.60
 {
     SceKernelUtilsMt19937Context ctx; // sp..sp+2500
-    u32 hash[8]; // sp + 2512
+    u32 hmac[8]; // sp + 2512
     u32 buf1[16]; // sp + 2544
-    u32 buf2[8]; // sp + 2608
+    u32 hmac2[8]; // sp + 2608
     if (g_usePrecomp) {
-        memcpy(hash, g_precompKey.data(), 32);
+        memcpy(hmac, g_precompKey.data(), 32);
     } else {
-        scrambleBuf((u8*)unk1, 64, (u8*)preipl, preiplSize, (u8*)hash);
-        if (preipl != NULL && debug) {
-            printf("using hash = {0x%08x, {", *(u32*)unk1);
+        sha256hmac((u8*)preiplHmacKey, 64, (u8*)preipl, preiplSize, (u8*)hmac);
+        if (preipl != NULL && g_debug) {
+            printf("using hmac = {0x%08x, {", *(u32*)preiplHmacKey);
             for (s32 i = 0; i < 8; i++) {
-                printf("0x%08x", hash[i]);
+                printf("0x%08x", hmac[i]);
                 if (i < 7) {
                     printf(", ");
                 }
@@ -392,17 +384,17 @@ void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encrypt
     }
     ctx.count = 0;
     if (g_useSfmt) {
-        sfmtInit(&ctx, hash, g_customSha ? 7 : 8);
+        sfmtInit(&ctx, hmac, g_customSha ? 7 : 8);
     } else {
         // 0DCC
         for (s32 i = 0; i < 624; i += 8) {
-            memcpy(&ctx.state[i], hash, g_customSha ? 28 : 32);
+            memcpy(&ctx.state[i], hmac, g_customSha ? 28 : 32);
             if (g_customSha) {
                 ctx.state[i + 7] = 0;
             }
         }
     }
-    memset(hash, 0, sizeof(hash));
+    memset(hmac, 0, sizeof(hmac));
     if (!g_useSfmt) {
         // 0E40
         for (s32 i = 0; i < 624; i++) {
@@ -425,62 +417,51 @@ void decrypt(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encrypt
                 mt19937UInt(&ctx); // version 3.1x only
             }
         }
-        scrambleBuf((u8*)unk2, 64, (u8*)buf1, 64, (u8*)buf2);
-        s32 hashSize = g_customSha ? 28 : 32;
-        if (i + hashSize > encryptedSize) {
+        sha256hmac((u8*)dataHmacKey, 64, (u8*)buf1, 64, (u8*)hmac2);
+        s32 hmacSize = g_customSha ? 28 : 32;
+        if (i + hmacSize > encryptedSize) {
             for (s32 j = 0; i + j < encryptedSize; j++) {
-                *(decryptBuf++) ^= ((u8*)buf2)[j];
+                *(decryptBuf++) ^= ((u8*)hmac2)[j];
             }
         } else {
-            for (s32 j = 0; j < hashSize / 4; j++) {
-                *(u32*)decryptBuf ^= buf2[j];
+            for (s32 j = 0; j <hmacSize / 4; j++) {
+                *(u32*)decryptBuf ^= hmac2[j];
                 decryptBuf += 4;
             }
         }
     }
-    // in 3.30+, here ctx, buf1 and buf2 are memset to 0
+    // in 3.30+, here ctx, buf1 and hmac2 are memset to 0
 }
 
-#ifdef PREIPL
 // for 3.30+ part1
-void decrypt330(void *preipl, u32 preiplSize, void *unk1, void *unk2, void *encryptedImg, s32 encryptedSize) // at 0x040F1018 in 3.30 part1
+void decrypt330(u32 *preipl, u32 preiplSize, void *preiplHmacKey, void *dataHmacKey, void *encryptedImg, s32 encryptedSize, u32 realPreiplSize) // at 0x040F1018 in 3.30 part1
 {
-    // stack size: 6656
-    u8 buf1[32]; // sp
-    SceKernelUtilsMt19937Context ctx; // sp + 32..sp+2532
-    u32 buf2[1024]; // sp+2544
-    //u32 *alignedPreipl = (u32*)(preipl & 0xFFFFFF00); // we're not sure if our preipl buffer is aligned here
-    u32 *alignedPreipl = (u32*)preipl;
+    u8 buf1[32];
+    SceKernelUtilsMt19937Context ctx;
+    u32 buf2[1024];
     memset(buf1, 0, 32); // in 3.80+ only
-    //mt19937Init(&ctx, (u32)preipl); // we want to use the actual memory address of the preipl, not the address on the host
     mt19937Init(&ctx, 0xBFC00040);
-    // 107C
-    for (s32 i = 0; i < PREIPL_SIZE / 4; i++) {
-        buf2[i] = alignedPreipl[i] + mt19937UInt(&ctx);
+    for (s32 i = 0; i < realPreiplSize / 4; i++) {
+        buf2[i] = preipl[i] + mt19937UInt(&ctx);
     }
-    scrambleBuf(g_newKey, preiplSize, (u8*)buf2, PREIPL_SIZE, buf1);
+    sha256hmac(g_newKey, preiplSize, (u8*)buf2, realPreiplSize, buf1);
     memset(buf2, 0, 4096);
     memset(&ctx, 0, 2500);
     // Note the checksum part does not exist for testing tools since it only allows one preipl format (but the XOR doesn't seem to be triggered anyway)
     u8 checksum = 0;
-    // 10F0
     for (s32 i = 0; i < 32; i++) {
         checksum = (checksum + buf1[i]) & 0xFF;
     }
-    if (debug) {
+    if (g_debug) {
         printf("checksum %02x vs %02x\n", g_checksum, checksum);
     }
     if (g_checksum == checksum) {
-        // 1164
-        // 1170
         for (s32 i = 0; i < 32; i++) {
             buf1[i] ^= g_xorKey[i];
         }
     }
-    // 111C
-    decrypt(buf1, 32, unk1, unk2, encryptedImg, encryptedSize);
+    decrypt(buf1, 32, preiplHmacKey, dataHmacKey, encryptedImg, encryptedSize);
 }
-#endif
 
 s32 sha256Digest(u8 *data, u32 size, u8 *digest) // at 0x040F12CC 
 {
@@ -509,9 +490,10 @@ int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn)
 }
 
 // Decompress/unscramble IPL stages 2 & 3 and kernel keys
-int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir)
+int extractIPLStages(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char *filename, std::string outdir, u8 *preipl_bin, u32 preiplSize, bool verbose, bool keepAll, std::string &logStr)
 {
-    if (debug) {
+    g_debug = verbose;
+    if (g_debug) {
         printf("Version %d\n", version);
     }
     g_customSha = g_useSfmt = g_emptyRound = g_usePrecomp = 0;
@@ -538,7 +520,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
             u32 gzip_lo = *(u32*)(inData + off + 4);
             if (gzip_hi >> 16 == 0x3C06 && gzip_lo >> 16 == 0x24C6) { // lui $a2, x & addiu $a2, $a2, x
                 u32 gzip_addr = (gzip_hi << 16) + (s16)(gzip_lo & 0xFFFF);
-                if (debug) {
+                if (g_debug) {
                     printf("Decompressing zip at %08x\n", gzip_addr);
                 }
                 u32 realInSize;
@@ -548,23 +530,25 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
                     printf("Failed decompressing stage2!\n");
                     return 1;
                 }
-                if (debug) {
+                if (g_debug) {
                     printf("decompressed %d bytes\n", decSize);
                 }
-                szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename) + ".gz" ;
-                WriteFile(szDataPath.c_str(), (u8*)inData+gzip_addr-loadAddr, realInSize);
+                if (keepAll) {
+                    szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz" ;
+                    WriteFile(szDataPath.c_str(), (u8*)inData+gzip_addr-loadAddr, realInSize);
+                }
 
-                szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename);
+                szDataPath = outdir + "/stage2_" + std::string(filename);
                 WriteFile(szDataPath.c_str(), decBuf, decSize);
-                printf(",stage2 decompressed");
+                logStr += ",stage2 decompressed";
                 decSize = pspDecryptIPL3((u8*)inData+img2_addr-loadAddr, outBuf, inDataSize - (img2_addr-loadAddr));
                 if (!decSize) {
                     printf("Failed decrypting stage3!\n");
                 } else {
-                    printf(",stage3 decrypted");
-                    szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename);
+                    logStr += ",stage3 decrypted";
+                    szDataPath = outdir + "/stage3_" + std::string(filename);
                     WriteFile(szDataPath.c_str(), outBuf, decSize);
-                    if (debug) {
+                    if (g_debug) {
                         printf("decrypted %d bytes\n", decSize);
                     }
                 }
@@ -620,7 +604,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
     if (version >= 505) {
         g_useSfmt = 1;
     }
-    if (debug) {
+    if (g_debug) {
         printf("keys at %08x, %08x, img at %08x, size %08x\n", key1_off, key2_off, img_off, img_size);
     }
     if (key1_off == 0 || key2_off == 0 || img_off == 0 || img_size == 0) {
@@ -656,7 +640,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
                 g_newKey = (u8*)inData+addr-loadAddr;
                 g_xorKey = (u8*)inData+addr-loadAddr+0x300;
                 g_checksum = inData[addr-loadAddr+0x320];
-                if (debug) {
+                if (g_debug) {
                     printf("key2 is %08x, %08x, %02x\n", addr, addr+0x300, g_checksum);
                 }
                 break;
@@ -670,26 +654,26 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
     u32 key_idx = *(u32*)(inData+key1_off-loadAddr);
     auto precompKeyIt = g_keys.find(key_idx);
     if (precompKeyIt != g_keys.end()) {
-        if (debug) {
+        if (g_debug) {
             printf("found key %08x %08x...\n", precompKeyIt->second[0], precompKeyIt->second[1]);
         }
         g_usePrecomp = 1;
         g_precompKey = precompKeyIt->second;
         decrypt(NULL, 0, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function
     } else {
-#ifdef PREIPL
-        if (version >= 330) {
-            decrypt330(preipl_bin, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function // 3.30+
+        if (preipl_bin != nullptr) {
+            if (version >= 330) {
+                decrypt330((u32*)preipl_bin, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size, preiplSize); // decrypt function // 3.30+
+            } else {
+                decrypt(preipl_bin + 0x40, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function
+            }
         } else {
-            decrypt(preipl_bin + 0x40, 640, inData+key1_off-loadAddr, inData+key2_off-loadAddr, inData+img_off-loadAddr, img_size); // decrypt function
+            if (g_debug) {
+                printf("No preipl provided and key not found, aborting\n");
+            }
+            logStr += ",no key found";
+            return 1;
         }
-#else
-        if (debug) {
-            printf("No preipl provided and key not found, aborting\n");
-        }
-        printf(",no key found");
-        return 1;
-#endif
     }
     g_usePrecomp = 0;
 
@@ -700,16 +684,38 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
         printf("Failed unscrambling or decompressing stage2!\n");
         return 1;
     }
-    if (debug) {
+    if (g_debug) {
         printf("decompressed %d bytes\n", decSize);
     }
-    szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename) + ".gz";
-    WriteFile(szDataPath.c_str(), (u8*)inData+img_off-loadAddr, realInSize);
+    if (keepAll) {
+        szDataPath = outdir + "/stage2_" + std::string(filename) + ".gz";
+        WriteFile(szDataPath.c_str(), (u8*)inData+img_off-loadAddr, realInSize);
+    }
 
-    szDataPath = outdir + "/F0/PSARDUMPER/stage2_" + std::string(filename);
+    szDataPath = outdir + "/stage2_" + std::string(filename);
     WriteFile(szDataPath.c_str(), decBuf, decSize);
-    printf(",stage2 unscrambled & decompressed");
-
+    logStr += ",stage2 unscrambled & decompressed";
+    
+    // New: Added handling for xor syscon step for keys
+    // Super fun happy time
+    // final missing peice :)
+    u8 scidx[0x10];
+    u8 stage2xor[0x10];
+    u8 scxor[0x10];
+    int model = ((filename[8] - 0x30) * 10) + (filename[9] - 0x30);
+    int xkeyoff =findStage2Keys(decBuf,decSize);
+    if(xkeyoff>0) {
+        memcpy(scidx,&decBuf[xkeyoff], 0x10);
+        if((version>505) && (model > 1)) {
+            memcpy(stage2xor,&decBuf[xkeyoff+0x10], 0x10);
+        } else {
+            memset(stage2xor,0,0x10);
+        }
+        getSysconIPLKey(model, scidx,scxor);
+        for(int j=0;j<0x10;j++) scxor[j] ^= stage2xor[j];
+    } else{
+        memset(scxor,0,0x10);
+    }
     /////////////////////////
     // Find keys used for stage3 unscrambling (they're in stage2)
     /////////////////////////
@@ -768,7 +774,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
             return 1;
         }
     }
-    if (debug) {
+    if (g_debug) {
         printf("part2 key offs %08x, %08x, size %08x, img2 at %08x\n", key3_addr, key4_addr, img2_size, img2_addr);
     }
 
@@ -798,7 +804,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
         g_useSfmt = 1;
     }
     if (key5_addr != 0 && key6_addr != 0) {
-        if (debug) {
+        if (g_debug) {
             printf("decrypting kernel key at %08x using keys at %08x, %08x\n", kernelKeys_addr, key5_addr, key6_addr);
         }
         decrypt(NULL, 0, decBuf+key5_addr-part2LoadAddr, decBuf+key6_addr-part2LoadAddr, inData+kernelKeys_addr-loadAddr, 256);
@@ -806,8 +812,10 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
         if (!decSize) {
             printf("Failed decrypting kernel keys!\n");
         } else {
-            printf(",kernel keys decrypted");
-            szDataPath = outdir + "/F0/PSARDUMPER/kkeys_" + std::string(filename);
+            logStr += ",kernel keys decrypted";
+            szDataPath = outdir + "/kkeys_" + std::string(filename);
+            // Added the final xor to create to correct second key
+            for(int j=0;j<0x10;j++) outBuf[j+0x10] ^= scxor[j];
             WriteFile(szDataPath.c_str(), outBuf, decSize);
         }
     }
@@ -820,7 +828,7 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
     if (!decSize) {
         printf("Failed decrypting stage3!\n");
     } else {
-        if (debug) {
+        if (g_debug) {
             printf("decrypted %d bytes\n", decSize);
         }
         if (outBuf[0] == 0x1f && outBuf[1] == 0x8b) {
@@ -830,18 +838,20 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, u32 loadAddr, const char
                 printf("Failed decompressing stage3!\n");
                 return 1;
             }
-            if (debug) {
+            if (g_debug) {
                 printf("decompressed %d bytes\n", decompSize);
             }
-            szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename)+ ".gz";
-            WriteFile(szDataPath.c_str(), outBuf, realInSize);
+            if (keepAll) {
+                szDataPath = outdir + "/stage3_" + std::string(filename)+ ".gz";
+                WriteFile(szDataPath.c_str(), outBuf, realInSize);
+            }
 
-            szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename);
+            szDataPath = outdir + "/stage3_" + std::string(filename);
             WriteFile(szDataPath.c_str(), decBuf, decompSize);
-            printf(",stage3 decrypted & decompressed");
+            logStr += ",stage3 decrypted & decompressed";
         } else {
-            printf(",stage3 decrypted");
-            szDataPath = outdir + "/F0/PSARDUMPER/stage3_" + std::string(filename);
+            logStr += ",stage3 decrypted";
+            szDataPath = outdir + "/stage3_" + std::string(filename);
             WriteFile(szDataPath.c_str(), outBuf, decSize);
         }
     }

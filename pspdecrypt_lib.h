@@ -1,18 +1,8 @@
 #ifndef __PSPDECRYPT_H__
 #define __PSPDECRYPT_H__
 
+#include <string>
 #include "CommonTypes.h"
-
-/**
- * Decrypts a PRX or a buffer with similar encryption
- *
- * @param inbuf - The input buffer
- * @param outbuf - The buffer that receives the decoded data
- * @param size - The size of input
- *
- * @returns the size of the decrypted data on success, < 0 on error
-*/
-//int pspDecryptPRX(u8 *inbuf, u8 *outbuf, u32 size);
 
 /**
  * Sign checks a buffer
@@ -50,7 +40,7 @@ int pspIsSignChecked(u8 *buf);
  *
  * @returns the size of the decrypted data (= 0 on error)
 */
-int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn);
+int pspDecryptIPL1(const u8* pbIn, u8* pbOut, int cbIn, std::string &logStr);
 
 /**
  * Linearalizes the decrypted first stage of IPL
@@ -74,6 +64,8 @@ int pspLinearizeIPL2(const u8* pbIn, u8* pbOut, int cbIn, u32 *startAddr);
 */
 int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn);
 
+int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir, u8 *preipl, u32 preiplSize, bool verbose, bool keepAll, std::string &logStr);
+
 /**
  * Checks if buffer is compressed
  *
@@ -92,7 +84,7 @@ int pspIsCompressed(u8 *buf);
  *
  * @returns the size of the decompressed data on success, < 0 on error
 */
-int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity);
+int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity, std::string &logStr);
 
 /**
  * Decrypts a file table (3.70+)
@@ -100,11 +92,12 @@ int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity);
  * @param buf1 - The input/output buffer
  * @param buf2 - Buffer for temporal use by the decoder
  * @param size - The size of input
+ * @param psarVersion - The PSAR version
  * @param mode - The mode
  *
  * @returns the size of the decrypted table on success, < 0 on error
 */
-int pspDecryptTable(u8 *buf1, u8 *buf2, int size, int mode);
+int pspDecryptTable(u8 *buf1, u8 *buf2, int size, int psarVersion, int mode);
 
 
 #endif
