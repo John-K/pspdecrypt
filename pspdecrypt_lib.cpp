@@ -336,28 +336,32 @@ int pspIsCompressed(u8 *buf)
 	return res;
 }
 
-int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity, std::string &logStr)
+int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity, std::string &logStr, u8 **inbufEnd)
 {
 	int retsize;
 	
 	if (inbuf[0] == 0x1F && inbuf[1] == 0x8B) 
 	{
-	    retsize = gunzip(inbuf, insize, outbuf, outcapacity);
+	    u32 realSize;
+	    retsize = gunzip(inbuf, insize, outbuf, outcapacity, &realSize);
+	    if (inbufEnd != NULL) {
+		    *inbufEnd = inbuf + realSize;
+		}
 	    logStr += ",gzip";
 	}
 	else if (memcmp(inbuf, "2RLZ", 4) == 0) 
 	{
-	    retsize = LZRDecompress(outbuf, outcapacity, inbuf+4, NULL);
+	    retsize = LZRDecompress(outbuf, outcapacity, inbuf+4, inbufEnd);
 		logStr += ",lzrc";
 	}
 	else if (memcmp(inbuf, "KL4E", 4) == 0)
 	{
-		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, NULL, 1);
+		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, (void **)inbufEnd, 1);
 		logStr += ",kl4e";
 	}
 	else if (memcmp(inbuf, "KL3E", 4) == 0) 
 	{
-		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, NULL, 0);
+		retsize = decompress_kle(outbuf, outcapacity, inbuf+4, (void **)inbufEnd, 0);
 		logStr += ",kl3e";
 	}
 	else
