@@ -700,13 +700,17 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                         u8 *endPtr2;
                         logStr += "Has part2";
                         int cbExp = pspDecompress(endPtr, cbRemain, data2, 3000000, logStr, &endPtr2);
-                        logStr += ",decompressed,saved!";
-                        if (endPtr + cbRemain - endPtr2 != 0) {
-                            logStr += "Error: garbage at end.";
-                        }
-                        if (WriteFile((szDataPath + ".2").c_str(), data2, cbExp) != cbExp)
-                        {
-                            printf("Error writing %s.\n", (szDataPath + ".2").c_str());
+                        if (cbExp > 0) {
+                            logStr += ",decompressed,saved!";
+                            if (endPtr + cbRemain - endPtr2 != 0) {
+                                logStr += "Error: garbage at end.";
+                            }
+                            if (WriteFile((szDataPath + ".2").c_str(), data2, cbExp) != cbExp)
+                            {
+                                printf("Error writing %s.\n", (szDataPath + ".2").c_str());
+                            }
+                        } else {
+                            logStr += ",error decompressing!";
                         }
                     }
                 }
