@@ -665,11 +665,14 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                     int cbToSave = cbDecrypted;
 
                     logStr += ",decrypted";
+                    u8 *endPtr;
+                    int cbRemain = 0;
 
                     if ((data1[0] == 0x1F && data1[1] == 0x8B) ||
                         memcmp(data1, "2RLZ", 4) == 0 || memcmp(data1, "KL4E", 4) == 0)
                     {
-                        int cbExp = pspDecompress(data1, cbToSave, data2, 3000000, logStr);
+                        int cbExp = pspDecompress(data1, cbToSave, data2, 3000000, logStr, &endPtr);
+                        cbRemain = data1 + cbToSave - endPtr;
 
                         if (cbExp > 0)
                         {
@@ -691,6 +694,24 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                     logStr += ",saved!";
                     if (CheckExtractReboot(name, pbToSave, cbToSave, data1, data2, outdir, extractOnly, logStr) < 0) {
                         logStr += ",error extracting/decrypting reboot.bin";
+                    }
+
+                    if (cbRemain > 0) {
+                        u8 *endPtr2;
+                        logStr += "Has part2";
+                        int cbExp = pspDecompress(endPtr, cbRemain, data2, 3000000, logStr, &endPtr2);
+                        if (cbExp > 0) {
+                            logStr += ",decompressed,saved!";
+                            if (endPtr + cbRemain - endPtr2 != 0) {
+                                logStr += "Error: garbage at end.";
+                            }
+                            if (WriteFile((szDataPath + ".2").c_str(), data2, cbExp) != cbExp)
+                            {
+                                printf("Error writing %s.\n", (szDataPath + ".2").c_str());
+                            }
+                        } else {
+                            logStr += ",error decompressing!";
+                        }
                     }
                 }
                 else

@@ -81,10 +81,11 @@ int pspIsCompressed(u8 *buf);
  * @param inbuf - The input buffer with the compressed data
  * @param outbuf - The output buffer that receives the decompressed data
  * @param outcapacity - The max capacity of the output buffer
+ * @param inbufEnd - Pointer to the end of the compressed stream of the input buffer
  *
  * @returns the size of the decompressed data on success, < 0 on error
 */
-int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity, std::string &logStr);
+int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity, std::string &logStr, u8 **inbufEnd = NULL);
 
 /**
  * Decrypts a file table (3.70+)
