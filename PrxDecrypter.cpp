@@ -747,7 +747,7 @@ static_assert(sizeof(PRXType6) == 0x150, "inconsistent size of PRX Type 6");
 
 static int pspDecryptType0(const u8 *inbuf, u8 *outbuf, u32 size)
 {
-	//INFO_LOG(LOADER, "Decrypting tag %02X", (u32)*(u32_le *)&inbuf[0xD0]);
+	//INFO_LOG(LOADER, "Decrypting tag %08X", (u32)*(u32_le *)&inbuf[0xD0]);
 	const auto decryptSize = *(s32_le*)&inbuf[0xB0];
 	const auto pti = GetTagInfo((u32)*(u32_le *)&inbuf[0xD0]);
 
@@ -801,7 +801,7 @@ static int pspDecryptType0(const u8 *inbuf, u8 *outbuf, u32 size)
 
 static int pspDecryptType1(const u8 *inbuf, u8 *outbuf, u32 size)
 {
-	//INFO_LOG(LOADER, "Decrypting tag %02X", (u32)*(u32_le *)&inbuf[0xD0]);
+	//INFO_LOG(LOADER, "Decrypting tag %08X", (u32)*(u32_le *)&inbuf[0xD0]);
 	const auto decryptSize = *(s32_le*)&inbuf[0xB0];
 	const auto pti = GetTagInfo((u32)*(u32_le *)&inbuf[0xD0]);
 
@@ -856,7 +856,7 @@ static int pspDecryptType1(const u8 *inbuf, u8 *outbuf, u32 size)
 
 static int pspDecryptType2(const u8 *inbuf, u8 *outbuf, u32 size)
 {
-	//INFO_LOG(LOADER, "Decrypting tag %02X", (u32)*(u32_le *)&inbuf[0xD0]);
+	//INFO_LOG(LOADER, "Decrypting tag %08X", (u32)*(u32_le *)&inbuf[0xD0]);
 	const auto decryptSize = *(s32_le*)&inbuf[0xB0];
 	const auto pti = GetTagInfo2((u32)*(u32_le *)&inbuf[0xD0]);
 
@@ -925,7 +925,7 @@ static int pspDecryptType2(const u8 *inbuf, u8 *outbuf, u32 size)
 
 static int pspDecryptType5(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed)
 {
-	//INFO_LOG(LOADER, "Decrypting tag %02X", (u32)*(u32_le *)&inbuf[0xD0]);
+	//INFO_LOG(LOADER, "Decrypting tag %08X", (u32)*(u32_le *)&inbuf[0xD0]);
 	const auto decryptSize = *(s32_le*)&inbuf[0xB0];
 	const auto pti = GetTagInfo2((u32)*(u32_le *)&inbuf[0xD0]);
 
@@ -990,7 +990,7 @@ static int pspDecryptType5(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed
 
 static int pspDecryptType6(const u8 *inbuf, u8 *outbuf, u32 size)
 {
-	//INFO_LOG(LOADER, "Decrypting tag %02X", (u32)*(u32_le *)&inbuf[0xD0]);
+	//INFO_LOG(LOADER, "Decrypting tag %08X", (u32)*(u32_le *)&inbuf[0xD0]);
 	const auto decryptSize = *(s32_le*)&inbuf[0xB0];
 	const auto pti = GetTagInfo2((u32)*(u32_le *)&inbuf[0xD0]);
 
@@ -1060,14 +1060,14 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 {
 	kirk_init();
 	u32 tag = (u32)*(u32_le *)&inbuf[0xD0];
-	//INFO_LOG(LOADER, "Decrypting tag %02X", tag);
+	//INFO_LOG(LOADER, "Decrypting tag %08X", tag);
 	// this would be significantly better if we had a log of the tags
 	// and their appropriate prx types
 	// since we don't know the PRX type we attempt a decrypt using all
 	auto res = pspDecryptType0(inbuf, outbuf, size);
 	if (res >= 0) {
 		if (verbose) {
-			printf("Decryption successful for tag %02X with type 0\n", tag);
+			printf("Decryption successful for tag %08X with type 0\n", tag);
 		}
 		return res;
 	}
@@ -1075,7 +1075,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 	res = pspDecryptType1(inbuf, outbuf, size);
 	if (res >= 0) {
 		if (verbose) {
-			printf("Decryption successful for tag %02X with type 1\n", tag);
+			printf("Decryption successful for tag %08X with type 1\n", tag);
 		}
 		return res;
 	}
@@ -1083,7 +1083,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 	res = pspDecryptType2(inbuf, outbuf, size);
 	if (res >= 0) {
 		if (verbose) {
-			printf("Decryption successful for tag %02X with type 2\n", tag);
+			printf("Decryption successful for tag %08X with type 2\n", tag);
 		}
 		return res;
 	}
@@ -1091,7 +1091,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 	res = pspDecryptType5(inbuf, outbuf, size, seed);
 	if (res >= 0) {
 		if (verbose) {
-			printf("Decryption successful for tag %02X with type 5\n", tag);
+			printf("Decryption successful for tag %08X with type 5\n", tag);
 		}
 		return res;
 	}
@@ -1099,10 +1099,10 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 	res = pspDecryptType6(inbuf, outbuf, size);
 	if (res >= 0) {
 		if (verbose) {
-			printf("Decryption successful for tag %02X with type 6\n", tag);
+			printf("Decryption successful for tag %08X with type 6\n", tag);
 		}
 	} else if (verbose) {
-		printf("Decryption failed for tag %02X\n", tag);
+		printf("Decryption failed for tag %08X\n", tag);
 	}
 	return res;
 }
