@@ -158,10 +158,11 @@ int main(int argc, char *argv[]) {
 
     streampos size = inFile.tellg();
     char* inData = new char[size];
-    char* outData = new char[size];
     inFile.seekg(0, ios::beg);
     inFile.read(inData, size);
     inFile.close();
+	const auto plainSize = *(s32_le*)&inData[0x28];
+	char* outData = new char[plainSize];
     if (size < 0x30) {
         cerr << "Input file is too small!" << endl;
         return 1;
@@ -205,8 +206,8 @@ int main(int argc, char *argv[]) {
                 if (infoOnly) {
                     cout << "Input is an encrypted PSP executable encrypted with tag " << hex << setw(8) << *(u32*)&inData[0xD0] << endl;
                 } else {
-                    int outSize = pspDecryptPRX((const u8*)inData, (u8 *)outData, size, nullptr, true);
-                    WriteFile(outFile.c_str(), outData, outSize);
+                    int outSize = pspDecryptPRX((const u8*)inData, (u8 *)outData, plainSize, nullptr, true);
+                    WriteFile(outFile.c_str(), outData, plainSize);
                 }
                 break;
             case PBP_MAGIC:
