@@ -1082,6 +1082,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 			if (verbose) {
 				printf("Decryption successful for tag %08X with type 0\n", tag);
 			}
+			return res;
 		}
 	}
 	
@@ -1099,6 +1100,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 			if (verbose) {
 				printf("Decryption successful for tag %08X with type 0\n", tag);
 			}
+			return res;
 		}
 	}
 	
@@ -1116,6 +1118,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 			if (verbose) {
 				printf("Decryption successful for tag %08X with type 0\n", tag);
 			}
+			return res;
 		}
 	}
 	
@@ -1133,6 +1136,7 @@ int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool ve
 			if (verbose) {
 				printf("Decryption successful for tag %08X with type 0\n", tag);
 			}
+			return res;
 		}
 	}
 	
