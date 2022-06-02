@@ -67,6 +67,7 @@ int main(int argc, char *argv[]) {
     string outDir = "";
     string outFile = "";
     string preipl = "";
+	string logStr;
     bool preiplSet = false;
     u8 preiplBuf[MAX_PREIPL_SIZE];
     u32 preiplSize = 0;
@@ -157,12 +158,11 @@ int main(int argc, char *argv[]) {
     }
 
     streampos size = inFile.tellg();
-    char* inData = new char[size];
+    unsigned char* inData = new unsigned char[size];
+    unsigned char* outData = new unsigned char[size];
     inFile.seekg(0, ios::beg);
-    inFile.read(inData, size);
+    inFile.read((char*)inData, size);
     inFile.close();
-	const auto plainSize = *(s32_le*)&inData[0x28];
-	char* outData = new char[plainSize];
     if (size < 0x30) {
         cerr << "Input file is too small!" << endl;
         return 1;
@@ -206,8 +206,17 @@ int main(int argc, char *argv[]) {
                 if (infoOnly) {
                     cout << "Input is an encrypted PSP executable encrypted with tag " << hex << setw(8) << *(u32*)&inData[0xD0] << endl;
                 } else {
-                    int outSize = pspDecryptPRX((const u8*)inData, (u8 *)outData, plainSize, nullptr, true);
-                    WriteFile(outFile.c_str(), outData, plainSize);
+                    int outSize = pspDecryptPRX((const u8*)inData, (u8 *)outData, size, nullptr, true);
+					u32 plainSize = (u32)*(u32_le *)&inData[0x28];
+					u8 out[plainSize];
+					if ((outData[0] == 0x1F && (u8)outData[1] == 0x8B) ||
+                        memcmp(outData, "2RLZ", 4) == 0 || memcmp(outData, "KL4E", 4) == 0
+						|| memcmp(outData, "KL3E", 4) == 0){
+						pspDecompress((u8*)outData, outSize, out, plainSize, logStr, NULL);
+						WriteFile(outFile.c_str(), out, plainSize);
+                    }else {
+						WriteFile(outFile.c_str(), outData, outSize);
+                    }
                 }
                 break;
             case PBP_MAGIC:

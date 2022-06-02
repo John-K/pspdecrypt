@@ -13,8 +13,6 @@ extern "C"
 //#include "Common/Common.h"
 //#include "Common/Swap.h"
 #include "PrxDecrypter.h"
-#include "common.h"
-#include "pspdecrypt_lib.h"
 
 #define ROUNDUP16(x)  (((x)+15)&~15)
 
@@ -1061,97 +1059,47 @@ static int pspDecryptType6(const u8 *inbuf, u8 *outbuf, u32 size)
 int pspDecryptPRX(const u8 *inbuf, u8 *outbuf, u32 size, const u8 *seed, bool verbose)
 {
 	kirk_init();
-	std::string logStr;
 	u32 tag = (u32)*(u32_le *)&inbuf[0xD0];
-	u8 * decompbuf = (u8*) malloc (size);
 	//INFO_LOG(LOADER, "Decrypting tag %08X", tag);
 	// this would be significantly better if we had a log of the tags
 	// and their appropriate prx types
 	// since we don't know the PRX type we attempt a decrypt using all
 	auto res = pspDecryptType0(inbuf, outbuf, size);
 	if (res >= 0) {
-		res = pspDecompress(outbuf, size, decompbuf, size, logStr);
-		if(res != -1){
-			memcpy(outbuf, decompbuf,size);
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
+		if (verbose) {
+			printf("Decryption successful for tag %08X with type 0\n", tag);
 		}
-		else {
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
-		}
+		return res;
 	}
 	
 	res = pspDecryptType1(inbuf, outbuf, size);
 	if (res >= 0) {
-		res = pspDecompress(outbuf, size, decompbuf, size, logStr);
-		if(res != -1){
-			memcpy(outbuf, decompbuf,size);
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
+		if (verbose) {
+			printf("Decryption successful for tag %08X with type 1\n", tag);
 		}
-		else {
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
-		}
+		return res;
 	}
 	
 	res = pspDecryptType2(inbuf, outbuf, size);
 	if (res >= 0) {
-		res = pspDecompress(outbuf, size, decompbuf, size, logStr);
-		if(res != -1){
-			memcpy(outbuf, decompbuf,size);
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
+		if (verbose) {
+			printf("Decryption successful for tag %08X with type 2\n", tag);
 		}
-		else {
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
-		}
+		return res;
 	}
 	
 	res = pspDecryptType5(inbuf, outbuf, size, seed);
 	if (res >= 0) {
-		res = pspDecompress(outbuf, size, decompbuf, size, logStr);
-		if(res != -1){
-			memcpy(outbuf, decompbuf,size);
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
+		if (verbose) {
+			printf("Decryption successful for tag %08X with type 5\n", tag);
 		}
-		else {
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-			return res;
-		}
+		return res;
 	}
 	
 	res = pspDecryptType6(inbuf, outbuf, size);
 	if (res >= 0) {
-		res = pspDecompress(outbuf, size, decompbuf, size, logStr);
-		if(res != -1){
-			memcpy(outbuf, decompbuf,size);
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
-		} else {
-			if (verbose) {
-				printf("Decryption successful for tag %08X with type 0\n", tag);
-			}
+		if (verbose) {
+			printf("Decryption successful for tag %08X with type 6\n", tag);
 		}
 	} else if (verbose) {
 		printf("Decryption failed for tag %08X\n", tag);
