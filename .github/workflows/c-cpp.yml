@@ -51,10 +51,6 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Setup OpenSSL
-      run: |
-        cd /usr/local/include 
-        ln -s ../opt/openssl/include/openssl .
     - name: Make binaries
       run: |
         export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl/lib/
