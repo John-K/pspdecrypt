@@ -9,7 +9,7 @@ on:
 jobs:
   build-linux:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -24,7 +24,7 @@ jobs:
         path: artifact
         
   build-windows:
-    runs-on: windows-2019
+    runs-on: windows-latest
     defaults:
       run:
         shell: msys2 {0}
@@ -48,7 +48,7 @@ jobs:
           path: artifact
         
   build-macos:
-    runs-on: macos-10.15
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
     - name: Setup OpenSSL
