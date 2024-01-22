@@ -16,6 +16,7 @@ static const u32 ELF_MAGIC  = 0x464C457F;
 static const u32 PSP_MAGIC  = 0x5053507E;
 static const u32 PSAR_MAGIC = 0x52415350;
 static const u32 PBP_MAGIC  = 0x50425000;
+static const u32 PUPK_MAGIC = 0x4B505550;
 
 static const u32 MAX_PREIPL_SIZE = 0x1000;
 
@@ -219,6 +220,45 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 break;
+			case PUPK_MAGIC:
+				{
+					u32 pbpOff = *(u32*)(&inData[0xC])+0x18;
+					cout << "PBP Offset is " << pbpOff << "\n";
+					u32 pspOff = *(u32*)(&inData[pbpOff]+0x20) + pbpOff;
+					cout << "PSP Offset is " << pspOff << "\n";
+					u32 psarOff = *(u32*)(&inData[pbpOff]+0x24) + pbpOff;
+					cout << "PSAR Offset is " << psarOff << "\n";
+					if (infoOnly) {
+						cout << "Input is a PBP with:" << endl;
+					}
+					if (pspOff < size && !psarOnly) {
+						if (*(u32*)&inData[pspOff] == ELF_MAGIC) {
+							if (infoOnly) {
+								cout << "- an unencrypted PSP (ELF) file" << endl;
+							} else {
+								cout << "Non-encrypted PSP file, writing to " << outFile << endl;
+								WriteFile(outFile.c_str(), &inData[pspOff], psarOff - pspOff);
+							}
+						} else {
+							if (infoOnly) {
+								cout << "- an encrypted PSP executable encrypted with tag " << hex << setw(8) << *(u32*)&inData[pspOff + 0xD0] << endl;
+							} else {
+								cout << "Decrypting PSP file to " << outFile << endl;
+								int outSize = pspDecryptPRX((const u8 *)&inData[pspOff], (u8 *)outData, psarOff - pspOff, nullptr, true);
+								WriteFile(outFile.c_str(), outData, outSize);
+							}
+						}
+					}
+					if (psarOff < size && !pspOnly) {
+						if (infoOnly) {
+							cout << "- a PSAR with the following characteristics:" << endl;
+						} else {
+							cout << "Extracting PSAR to " << outDir << endl;
+						}
+						pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly, keepAll);
+					}
+				}
+				break;	
             case PBP_MAGIC:
                 {
                     u32 pspOff = *(u32*)&inData[0x20];
