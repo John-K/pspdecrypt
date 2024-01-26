@@ -2,3 +2,5 @@
 *.BIN
 *.dec
 pspdecrypt
+.vscode/
+*.exe
