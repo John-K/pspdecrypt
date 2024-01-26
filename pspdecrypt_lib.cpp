@@ -322,18 +322,29 @@ int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, st
     return 0;
 }
 
+u32 pspGetTagVal(const u8 *buf)
+{
+    return buf ? (u32)*(u32_le *)&buf[0xD0] : 0;
+}
+
+int pspGetElfSize(const u8 *buf)
+{
+    return buf ? (int)*(u32_le *)&buf[0x28] : 0;
+}
+
+int pspGetCompSize(const u8 *buf)
+{
+    return buf ? (int)*(u32_le *)&buf[0xB0] : 0;
+}
+
 ////////// Decompression //////////
 
-int pspIsCompressed(u8 *buf)
+int pspIsCompressed(const u8 *buf)
 {
-	int res = 0;
-
-	if (buf[0] == 0x1F && buf[1] == 0x8B)
-		res = 1;
-	else if (memcmp(buf, "2RLZ", 4) == 0)
-		res = 1;
-
-	return res;
+	return (buf[0] == 0x1F && buf[1] == 0x8B) || /* GZIP header */
+		   (memcmp(buf, "2RLZ", 4) == 0)      ||
+		   (memcmp(buf, "KL4E", 4) == 0)      ||
+		   (memcmp(buf, "KL3E", 4) == 0);
 }
 
 int pspDecompress(u8 *inbuf, u32 insize, u8 *outbuf, u32 outcapacity, std::string &logStr, u8 **inbufEnd)

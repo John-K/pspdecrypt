@@ -19,6 +19,8 @@ static const u32 PBP_MAGIC  = 0x50425000;
 
 static const u32 MAX_PREIPL_SIZE = 0x1000;
 
+static int decryptAndDecompressPrx(u8 *out, const u8 *in, u32 inSize, bool verbose, bool decompPsp = true);
+
 void help(const char* exeName) {
     cout << "Usage: " << exeName << " [OPTION]... [FILE]" << endl;
     cout << endl;
@@ -29,6 +31,7 @@ void help(const char* exeName) {
     cout << "  -h, --help         display this help and exit" << endl;
     cout << "  -v, --verbose      enable verbose mode (mostly for debugging)" << endl;
     cout << "  -i, --info         display information about the input file and exit" << endl;
+    cout << "  -c, --no-decomp    do not decompress GZIP/KL4E/KL3E/2RLZ decrypted data" << endl;
     cout << "PSP(/PBP)-only options:" << endl;
     cout << "  -o, --outfile=FILE output file for the decrypted binary (default: [FILE.PSP].dec)" << endl;
     cout << "PSAR(/PBP)-only options:" << endl;
@@ -50,6 +53,7 @@ int main(int argc, char *argv[]) {
         {"help",         no_argument,       0, 'h'},
         {"verbose",      no_argument,       0, 'v'},
         {"outfile",      required_argument, 0, 'o'},
+        {"no-decomp",    no_argument,       0, 'c'},
         {"extract-only", no_argument,       0, 'e'},
         {"outdir",       required_argument, 0, 'O'},
         {"ipl-decrypt",  no_argument,       0, 'i'},
@@ -72,6 +76,7 @@ int main(int argc, char *argv[]) {
     u32 preiplSize = 0;
     bool verbose = false;
     bool extractOnly = false;
+    bool decompPsp = true;
     bool iplDecrypt = false;
     bool infoOnly = false;
     bool pspOnly = false;
@@ -80,13 +85,16 @@ int main(int argc, char *argv[]) {
     int version = -1;
     int c = 0;
     cout << showbase << internal << setfill('0');
-    while ((c = getopt_long(argc, argv, "hvo:eO:ip:V:IAP", long_options, &long_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hvco:eO:ip:V:IAP", long_options, &long_index)) != -1) {
         switch (c) {
             case 'h':
                 help(argv[0]);
                 return 0;
             case 'v':
                 verbose = true;
+                break;
+            case 'c':
+                decompPsp = false;
                 break;
             case 'o':
                 outFile = string(optarg);
@@ -157,10 +165,9 @@ int main(int argc, char *argv[]) {
     }
 
     streampos size = inFile.tellg();
-    char* inData = new char[size];
-    char* outData = new char[size];
+    u8 *inData = new u8[size];
     inFile.seekg(0, ios::beg);
-    inFile.read(inData, size);
+    inFile.read((char *)inData, size);
     inFile.close();
     if (size < 0x30) {
         cerr << "Input file is too small!" << endl;
@@ -194,78 +201,130 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         string logStr;
-        if (decryptIPL((u8*)inData, size, version, "ipl", outDir, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, keepAll, logStr) < 0) {
+        if (decryptIPL(inData, size, version, "ipl", outDir, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, keepAll, logStr) < 0) {
             cerr << "Decrypting standalone IPL" << logStr << endl;
             return 1;
         }
         cout << "Decrypting standalone IPL" << logStr << endl;
-    } else {
+    }
+    else {
         switch (*(u32*)inData) {
-            case PSP_MAGIC:
-                if (infoOnly) {
-                    cout << "Input is an encrypted PSP executable encrypted with tag " << hex << setw(8) << *(u32*)&inData[0xD0] << endl;
-                } else {
-                    int outSize = pspDecryptPRX((const u8*)inData, (u8 *)outData, size, nullptr, true);
-                    WriteFile(outFile.c_str(), outData, outSize);
-                }
-                break;
-            case PBP_MAGIC:
-                {
-                    u32 pspOff = *(u32*)&inData[0x20];
-                    u32 psarOff = *(u32*)&inData[0x24];
-                    if (infoOnly) {
-                        cout << "Input is a PBP with:" << endl;
-                    }
-                    if (pspOff < size && !psarOnly) {
-                        if (*(u32*)&inData[pspOff] == ELF_MAGIC) {
-                            if (infoOnly) {
-                                cout << "- an unencrypted PSP (ELF) file" << endl;
-                            } else {
-                                cout << "Non-encrypted PSP file, writing to " << outFile << endl;
-                                WriteFile(outFile.c_str(), &inData[pspOff], psarOff - pspOff);
-                            }
-                        } else {
-                            if (infoOnly) {
-                                cout << "- an encrypted PSP executable encrypted with tag " << hex << setw(8) << *(u32*)&inData[pspOff + 0xD0] << endl;
-                            } else {
-                                cout << "Decrypting PSP file to " << outFile << endl;
-                                int outSize = pspDecryptPRX((const u8 *)&inData[pspOff], (u8 *)outData, psarOff - pspOff, nullptr, true);
-                                WriteFile(outFile.c_str(), outData, outSize);
-                            }
-                        }
-                    }
-                    if (psarOff < size && !pspOnly) {
-                        if (infoOnly) {
-                            cout << "- a PSAR with the following characteristics:" << endl;
-                        } else {
-                            cout << "Extracting PSAR to " << outDir << endl;
-                        }
-                        pspDecryptPSAR((u8*)&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly, keepAll);
-                    }
-                }
-                break;
-            case PSAR_MAGIC:
-                if (infoOnly) {
-                    cout << "Input is a PSAR with the following characteristics:" << endl;
-                }
-                pspDecryptPSAR((u8*)inData, size, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly, keepAll);
-                break;
-            case ELF_MAGIC:
-                if (infoOnly) {
-                    cout << "Input is a non-encrypted PSP binary (ELF) file" << endl;
-                } else {
-                    cout << "Non-encrypted file, copying to " << outFile << endl;
-                    WriteFile(outFile.c_str(), inData, size);
-                }
-                break;
-            default:
-                cout << "Unknown input file format!" << endl;
+        case PSP_MAGIC:
+            if (infoOnly) {
+                cout << "Input is an encrypted PSP executable encrypted with tag " << hex << setw(8) << pspGetTagVal(inData) << endl;
+            }
+            else if (size < PSP_HEADER_SIZE) {
+                cerr << "Input file is too small!" << endl;
                 return 1;
+            }
+            else {
+                u8 *outData = new u8[pspGetElfSize(inData)];
+                int outSize = decryptAndDecompressPrx(outData, inData, size, true, decompPsp);
+                WriteFile(outFile.c_str(), outData, outSize);
+                delete[] outData;
+            }
+            break;
+        case PBP_MAGIC:
+            {
+                u32 pspOff = *(u32*)&inData[0x20];
+                u32 psarOff = *(u32*)&inData[0x24];
+                if (infoOnly) {
+                    cout << "Input is a PBP with:" << endl;
+                }
+                if (pspOff < size && !psarOnly) {
+                    if (*(u32*)&inData[pspOff] == ELF_MAGIC) {
+                        if (infoOnly) {
+                            cout << "- an unencrypted PSP (ELF) file" << endl;
+                        } else {
+                            cout << "Non-encrypted PSP file, writing to " << outFile << endl;
+                            WriteFile(outFile.c_str(), &inData[pspOff], psarOff - pspOff);
+                        }
+                    }
+                    else if (*(u32*)&inData[pspOff] == PSP_MAGIC) {
+                        if (infoOnly) {
+                            cout << "- an encrypted PSP executable encrypted with tag " << hex << setw(8) << pspGetTagVal(&inData[pspOff]) << endl;
+                        }
+                        else if (psarOff - pspOff < PSP_HEADER_SIZE) {
+                            cerr << "DATA.PSP file within the input PBP is too small!" << endl;
+                            return 1;
+                        }
+                        else {
+                            cout << "Decrypting PSP file to " << outFile << endl;
+                            u8 *outData = new u8[pspGetElfSize(&inData[pspOff])];
+                            int outSize = decryptAndDecompressPrx(outData, &inData[pspOff], psarOff - pspOff, true, decompPsp);
+                            WriteFile(outFile.c_str(), outData, outSize);
+                            delete[] outData;
+                        }
+                    }
+                    else if (infoOnly) {
+                        cout << "- unknown DATA.PSP file data" << endl;
+                    }
+                }
+                if (psarOff < size && !pspOnly) {
+                    if (infoOnly) {
+                        cout << "- a PSAR with the following characteristics:" << endl;
+                    } else {
+                        cout << "Extracting PSAR to " << outDir << endl;
+                    }
+                    pspDecryptPSAR(&inData[psarOff], (u32)size - psarOff, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly, keepAll, decompPsp);
+                }
+            }
+            break;
+        case PSAR_MAGIC:
+            if (infoOnly) {
+                cout << "Input is a PSAR with the following characteristics:" << endl;
+            }
+            pspDecryptPSAR(inData, size, outDir, extractOnly, preiplSet ? preiplBuf : nullptr, preiplSize, verbose, infoOnly, keepAll, decompPsp);
+            break;
+        case ELF_MAGIC:
+            if (infoOnly) {
+                cout << "Input is a non-encrypted PSP binary (ELF) file" << endl;
+            } else {
+                cout << "Non-encrypted file, copying to " << outFile << endl;
+                WriteFile(outFile.c_str(), inData, size);
+            }
+            break;
+        default:
+            cout << "Unknown input file format!" << endl;
+            return 1;
         }
     }
 
     delete[] inData;
-    delete[] outData;
 
     return 0;
+}
+
+static int decryptAndDecompressPrx(u8 *out, const u8 *in, u32 inSize, bool verbose, bool decompPsp)
+{
+    int elfSize, outSize;
+
+    elfSize = pspGetElfSize(in);
+    outSize = pspDecryptPRX(in, out, inSize, nullptr, verbose);
+    if (outSize < 0) {
+        return outSize;
+    }
+
+    if (outSize >= 4 && pspIsCompressed(out)) {
+        if (decompPsp) {
+            std::string logStr;
+            u8 *temp = new u8[elfSize];
+            outSize = pspDecompress(out, outSize, temp, elfSize, logStr);
+            if (outSize == elfSize) {
+                memcpy(out, temp, elfSize);
+                if (verbose) {
+                    printf("Decompression successful (%s)\n", logStr.substr(1).c_str());
+                }
+            }
+            else if (verbose) {
+                printf("Decompression failed (%s)\n", logStr.substr(1).c_str());
+            }
+            delete[] temp;
+        }
+        else if (verbose) {
+            printf("Skipped data decompression\n");
+        }
+    }
+
+    return outSize;
 }

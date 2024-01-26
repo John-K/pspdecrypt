@@ -67,13 +67,34 @@ int pspDecryptIPL3(const u8* pbIn, u8* pbOut, int cbIn);
 int decryptIPL(u8 *inData, u32 inDataSize, int version, const char *filename, std::string outdir, u8 *preipl, u32 preiplSize, bool verbose, bool keepAll, std::string &logStr);
 
 /**
+ * Get the PSP module tag as an unsigned int.
+ * @param buf Pointer to the ~PSP header buffer (size >= 0x150 bytes)
+ * @return PSP module tag 
+ */
+u32 pspGetTagVal(const u8 *buf);
+
+/**
+ * Get the size of the decrypted & decompressed ELF module.
+ * @param buf Pointer to the ~PSP header buffer (size >= 0x150 bytes)
+ * @return the ELF data size
+ */
+int pspGetElfSize(const u8 *buf);
+
+/**
+ * Get the size of the decrypted module data (possibly compressed).
+ * @param buf Pointer to the ~PSP header buffer (size >= 0x150 bytes)
+ * @return the decrypted data size
+ */
+int pspGetCompSize(const u8 *buf);
+
+/**
  * Checks if buffer is compressed
  *
  * @param buf - The buffer 
  *
  * @returns 1 if compressed, 0 otherwise
 */
-int pspIsCompressed(u8 *buf);
+int pspIsCompressed(const u8 *buf);
 
 /**
  * Decompresses a GZIP or 2RLZ data

@@ -451,7 +451,7 @@ void makeDirs(std::string filename, bool isDir)
     }
 }
 
-int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly, u8 *preipl, u32 preiplSize, bool verbose, bool infoOnly, bool keepAll)
+int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly, u8 *preipl, u32 preiplSize, bool verbose, bool infoOnly, bool keepAll, bool decompPsp)
 {
     kirk_init();
     if (memcmp(dataPSAR, "PSAR", 4) != 0) {
@@ -668,21 +668,25 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                     u8 *endPtr;
                     int cbRemain = 0;
 
-                    if ((data1[0] == 0x1F && data1[1] == 0x8B) ||
-                        memcmp(data1, "2RLZ", 4) == 0 || memcmp(data1, "KL4E", 4) == 0)
+                    if (pspIsCompressed(data1))
                     {
-                        int cbExp = pspDecompress(data1, cbToSave, data2, 3000000, logStr, &endPtr);
-                        cbRemain = data1 + cbToSave - endPtr;
+                        if (decompPsp) {
+                            int cbExp = pspDecompress(data1, cbToSave, data2, 3000000, logStr, &endPtr);
+                            cbRemain = data1 + cbToSave - endPtr;
 
-                        if (cbExp > 0)
-                        {
-                            logStr += ",expanded";
-                            pbToSave = data2;
-                            cbToSave = cbExp;
+                            if (cbExp > 0)
+                            {
+                                logStr += ",decompressed";
+                                pbToSave = data2;
+                                cbToSave = cbExp;
+                            }
+                            else
+                            {
+                                logStr += ",error decompressing";
+                            }
                         }
-                        else
-                        {
-                            logStr += ",error decompressing";
+                        else {
+                            logStr += ",skipped decompression";
                         }
                     }
 
@@ -717,7 +721,7 @@ int pspDecryptPSAR(u8 *dataPSAR, u32 size, std::string outdir, bool extractOnly,
                 else
                 {
                     char tagStr[9];
-                    snprintf(tagStr, sizeof(tagStr), "%08x", (u32)*(u32_le*)&data2[0xD0]);
+                    snprintf(tagStr, sizeof(tagStr), "%08x", pspGetTagVal(data2));
                     logStr += std::string(",error during decryption [tag ") + tagStr + "].";
                 }
             }

@@ -21,4 +21,4 @@
 #include "CommonTypes.h"
 #include "Swap.h"
 
-int pspDecryptPSAR(u8 *inbuf, u32 size, std::string outdir, bool extractOnly, u8 *preipl, u32 preiplSize, bool verbose, bool infoOnly, bool keepAll);
+int pspDecryptPSAR(u8 *inbuf, u32 size, std::string outdir, bool extractOnly, u8 *preipl, u32 preiplSize, bool verbose, bool infoOnly, bool keepAll, bool decompPsp = true);
