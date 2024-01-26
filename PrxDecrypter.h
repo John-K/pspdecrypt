@@ -21,9 +21,12 @@
 #include "CommonTypes.h"
 #include "Swap.h"
 
+#define PSP_HEADER_SIZE (0x150)
+
 #ifdef _MSC_VER
 #pragma pack(push, 1)
 #endif
+
 typedef struct
 {
 	u32_le      signature;       // 0
