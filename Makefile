@@ -2,8 +2,8 @@ CC=clang
 CXX=clang++
 #EXTRA_FLAG= -lprofiler
 EXTRA_FLAG=
-CFLAGS=-O3
-CXXFLAGS=-O3
+CFLAGS=-O3 -Wno-deprecated-declarations
+CXXFLAGS=-O3 -Wno-deprecated-declarations
 
 BIN=pspdecrypt
 LIBKIRK_SRCS=$(wildcard libkirk/*.c)
