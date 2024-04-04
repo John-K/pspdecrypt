@@ -70,8 +70,7 @@ jobs:
     - name: Make binaries
       run: |
         export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix openssl)/lib
-        export INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
-        brew --prefix openssl
+        export CPLUS_INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
         make CXX='clang++ -std=c++11'
     - name: Prepare Artifacts
       run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
