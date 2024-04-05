@@ -73,6 +73,7 @@ jobs:
         export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix openssl)/lib
         export CPLUS_INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
         make CXX='clang++ -std=c++11 -target arm64-apple-darwin20.1.0 -o pspdecrypt-arm64'
+        make clean
         make CXX='clang++ -std=c++11 -target x86_64-apple-darwin-macho -o pspdecrypt-x86_64'
         lipo pspdecrypt-arm64 pspdecrypt-x86_64 -create -output pspdecrypt
     - name: Prepare Artifacts
