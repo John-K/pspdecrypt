@@ -55,7 +55,7 @@ jobs:
       run: |
         export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix openssl)/lib
         export CPLUS_INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
-        make CXX='clang++ -std=c++11 -target x86_64-apple-darwin-macho -o pspdecrypt-x86_64'
+        make CXX='clang++ -std=c++11 -target x86_64-apple-darwin-macho'
     - name: Prepare Artifacts
       run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
     - name: Upload Artifacts
@@ -81,8 +81,7 @@ jobs:
         path: artifact
     - name: Make Universal Binary
       run: |
-        unzip artifact/macos-intel-binaries.zip
-        lipo pspdecrypt-arm64 pspdecrypt-x86_64 -create -output pspdecrypt
+        lipo pspdecrypt-arm64 ~/work/pspdecrypt/pspdecrypt/artifact/pspdecrypt -create -output pspdecrypt
 
     - name: Prepare Artifacts
       run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
