@@ -65,6 +65,7 @@ jobs:
         path: artifact
 
   build-macos-universal:
+    needs: build-macos-x86
     runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
