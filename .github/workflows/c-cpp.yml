@@ -82,6 +82,7 @@ jobs:
     - name: Make Universal Binary
       run: |
         lipo pspdecrypt ~/work/pspdecrypt/pspdecrypt/artifact/pspdecrypt -create -output pspdecrypt
+        rm -rf ~/work/pspdecrypt/pspdecrypt/artifact/
 
     - name: Prepare Artifacts
       run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
