@@ -73,7 +73,7 @@ jobs:
       run: |
         export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix openssl)/lib
         export CPLUS_INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
-        make CXX='clang++ -std=c++11 -target arm64-apple-darwin20.1.0 -o pspdecrypt-arm64'
+        make CXX='clang++ -std=c++11 -target arm64-apple-darwin20.1.0'
     - name: Download Artifact
       uses: actions/download-artifact@v4
       with:
@@ -81,7 +81,7 @@ jobs:
         path: artifact
     - name: Make Universal Binary
       run: |
-        lipo pspdecrypt-arm64 ~/work/pspdecrypt/pspdecrypt/artifact/pspdecrypt -create -output pspdecrypt
+        lipo pspdecrypt ~/work/pspdecrypt/pspdecrypt/artifact/pspdecrypt -create -output pspdecrypt
 
     - name: Prepare Artifacts
       run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
