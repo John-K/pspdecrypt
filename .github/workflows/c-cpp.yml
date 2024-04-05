@@ -75,13 +75,13 @@ jobs:
         export CPLUS_INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
         make CXX='clang++ -std=c++11 -target arm64-apple-darwin20.1.0 -o pspdecrypt-arm64'
     - name: Download Artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: macos-intel-binaries
         path: artifact
     - name: Make Universal Binary
       run: |
-        unzip macos-intel-binaries.zip
+        unzip artifact/macos-intel-binaries.zip
         lipo pspdecrypt-arm64 pspdecrypt-x86_64 -create -output pspdecrypt
 
     - name: Prepare Artifacts
