@@ -12,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Make binaries
       run: make
     - name: Prepare Artifacts
       run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: linux-binaries
         path: artifact
@@ -36,29 +36,58 @@ jobs:
                 git
                 mingw-w64-x86_64-clang
                 mingw-w64-x86_64-openssl
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Makes Binaries
         run: make EXTRA_FLAG=-static
       - name: Prepare Artifacts
         run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
           path: artifact
         
-  build-macos:
-    runs-on: macos-latest
+  build-macos-x86:
+    runs-on: macos-12
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Make binaries
       run: |
-        export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl/lib/
-        make CXX='clang++ -std=c++11'
+        export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix openssl)/lib
+        export CPLUS_INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
+        make CXX='clang++ -std=c++11 -target x86_64-apple-darwin-macho'
     - name: Prepare Artifacts
       run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: macos-binaries
+        name: macos-intel-binaries
+        path: artifact
+
+  build-macos-universal:
+    needs: build-macos-x86
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    - name: Make binaries
+      run: |
+        export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix openssl)/lib
+        export CPLUS_INCLUDE_PATH=$INCLUDE_PATH:$(brew --prefix openssl)/include
+        make CXX='clang++ -std=c++11 -target arm64-apple-darwin20.1.0'
+    - name: Download Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: macos-intel-binaries
+        path: artifact
+    - name: Make Universal Binary
+      run: |
+        lipo pspdecrypt ~/work/pspdecrypt/pspdecrypt/artifact/pspdecrypt -create -output pspdecrypt
+        rm -rf ~/work/pspdecrypt/pspdecrypt/artifact/
+
+    - name: Prepare Artifacts
+      run: mkdir artifact && mv pspdecrypt artifact/. && cp Readme.md artifact/.
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-universal-binary
         path: artifact
