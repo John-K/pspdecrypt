@@ -39,6 +39,7 @@ typedef struct
 void SHAInit(SHA_CTX *);
 void SHAUpdate(SHA_CTX *, BYTE *buffer, int count);
 void SHAFinal(BYTE *output, SHA_CTX *);
+static void SHSTransform(UINT4 *digest, UINT4 *data);
 
 #endif /* end _SHA_H_ */
 
