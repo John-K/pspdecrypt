@@ -16,6 +16,7 @@ static const u32 ELF_MAGIC  = 0x464C457F;
 static const u32 PSP_MAGIC  = 0x5053507E;
 static const u32 PSAR_MAGIC = 0x52415350;
 static const u32 PBP_MAGIC  = 0x50425000;
+static const u32 SCE_MAGIC  = 0x4543537e;  // ~SCE
 
 static const u32 MAX_PREIPL_SIZE = 0x1000;
 
@@ -256,6 +257,16 @@ int main(int argc, char *argv[]) {
                 } else {
                     cout << "Non-encrypted file, copying to " << outFile << endl;
                     WriteFile(outFile.c_str(), inData, size);
+                }
+                break;
+            case SCE_MAGIC:
+                if (infoOnly) {
+                    cout << "Input is an encrypted PSP executable with an ~SCE header." << endl;
+                } else {
+                    u32 headerSize = *(const u32_le*)(inData + 4);
+                    cout << "header size: " << headerSize << endl;
+                    int outSize = pspDecryptPRX((const u8*)inData + (size_t)headerSize, (u8 *)outData, (size_t)size - (size_t)headerSize, nullptr, true);
+                    WriteFile(outFile.c_str(), outData, outSize);
                 }
                 break;
             default:
