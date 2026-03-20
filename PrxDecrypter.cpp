@@ -794,7 +794,24 @@ static int pspDecryptType0(const u8 *inbuf, u8 *outbuf, u32 size)
 
 	if (memcmp(sha1, type0.sha1, sizeof(sha1)) != 0)
 	{
-		return -3;
+		// 0.6.5 proto prx ?
+		if (*(u16_le*)&type0.prxHeader[0x6] & 0x1)
+		{
+			size = *(s32_le*)&type0.prxHeader[0x44];
+			*(s32_le*)&type0.prxHeader[0x44] = 0;
+
+			SHAInit(&ctx);
+			SHAUpdate(&ctx, xorbuf.data(), 0x14);
+			SHAUpdate(&ctx, type0.unused, sizeof(type0.unused));
+			SHAUpdate(&ctx, type0.kirkBlock, sizeof(type0.kirkBlock));
+			SHAUpdate(&ctx, type0.prxHeader, sizeof(type0.prxHeader));
+			SHAFinal(sha1, &ctx);
+
+			if (memcmp(sha1, type0.sha1, sizeof(sha1)) != 0)
+			{
+				return -3;
+			}
+		}
 	}
 
 	constexpr auto offset = sizeof(PSP_Header)-sizeof(KIRK_CMD1_HEADER)-sizeof(type0.prxHeader);
